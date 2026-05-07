@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,7 +16,7 @@ type toolbarButtons struct {
 	run, stop *gtk.Button
 }
 
-func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit,gocyclo,cyclop
+func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit,gocyclo,cyclop
 	win := gtk.NewApplicationWindow(app)
 
 	win.SetTitle("devtabs")
@@ -102,7 +103,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 			t.close()
 		}
 
-		restartProcess()
+		restartProcess(ctx)
 	})
 
 	toolbar.Append(spacer)
@@ -316,7 +317,7 @@ func updateButtonSensitivity(buttons toolbarButtons, tabs []*tab, idx int) {
 }
 
 // restartProcess starts a fresh copy of the binary with the same arguments and exits.
-func restartProcess() {
+func restartProcess(ctx context.Context) {
 	exe, err := os.Executable()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "devtabs: restart: %v\n", err)
@@ -325,7 +326,7 @@ func restartProcess() {
 	}
 
 	//nolint:gosec // restarting the same binary with the original arguments is intentional
-	cmd := exec.Command(exe, os.Args[1:]...)
+	cmd := exec.CommandContext(ctx, exe, os.Args[1:]...)
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

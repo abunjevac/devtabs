@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"os"
 
 	"github.com/abunjevac/devtabs/internal/config"
@@ -9,11 +10,11 @@ import (
 )
 
 // Run starts the GTK application. Blocks until the window is closed.
-func Run(cfg *config.Config) {
+func Run(ctx context.Context, cfg *config.Config) {
 	app := gtk.NewApplication("io.github.abunjevac.devtabs", gio.ApplicationNonUnique)
 
 	app.ConnectActivate(func() {
-		w := newWindow(app, cfg)
+		w := newWindow(ctx, app, cfg)
 
 		w.Present()
 	})
