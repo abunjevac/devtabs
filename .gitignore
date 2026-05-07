@@ -1,0 +1,7 @@
+devtabs
+*.o
+*.a
+.idea/
+.vscode/
+*.swp
+*.swo
