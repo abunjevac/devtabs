@@ -23,6 +23,7 @@ const (
 	stateIdle    tabState = iota
 	stateDelay            // waiting for startup_delay to elapse
 	stateRunning          // foreground process group ≠ shell PID
+	stateDead             // shell exited; terminal no longer usable
 )
 
 // tab owns a single VTE terminal page and its state machine.
@@ -85,6 +86,8 @@ func (t *tab) drawDot(da *gtk.DrawingArea, cr *cairo.Context, width, height int)
 		cr.SetSourceRGB(0.2, 0.75, 0.2) // green
 	case stateDelay:
 		cr.SetSourceRGB(1.0, 0.78, 0.0) // yellow
+	case stateDead:
+		cr.SetSourceRGB(0.75, 0.2, 0.2) // red
 	default:
 		cr.SetSourceRGB(0.55, 0.55, 0.55) // grey
 	}
@@ -170,6 +173,16 @@ func (t *tab) onSpawnDone(pid int, ptyFd uintptr, err error) {
 	go t.pollState(ctx)
 
 	t.scheduleStartup()
+}
+
+// die stops the poller and marks the terminal permanently dead after the shell exits.
+// Must be called from the GTK main thread.
+func (t *tab) die() {
+	if t.cancel != nil {
+		t.cancel()
+	}
+
+	t.setState(stateDead)
 }
 
 // close cancels the poller goroutine and sends SIGHUP to the shell.

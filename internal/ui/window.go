@@ -11,7 +11,7 @@ type toolbarButtons struct {
 	run, stop *gtk.Button
 }
 
-func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen
+func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit
 	win := gtk.NewApplicationWindow(app)
 	win.SetTitle("devtabs")
 	win.SetDefaultSize(1200, 800)
@@ -40,7 +40,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, t.onSpawnDone)
 
 		vte.ConnectChildExited(vteTerm, func(_ int) {
-			t.setState(stateIdle)
+			t.die()
 		})
 
 		tabs = append(tabs, t)
