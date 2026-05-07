@@ -19,10 +19,11 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	win := gtk.NewApplicationWindow(app)
 
 	win.SetTitle("devtabs")
-	win.SetDefaultSize(1200, 800)
+	win.SetDefaultSize(cfg.WindowWidth, cfg.WindowHeight)
 	win.SetIconName("utilities-terminal")
 
 	notebook := gtk.NewNotebook()
+
 	notebook.SetTabPos(gtk.PosBottom)
 	notebook.SetShowBorder(false)
 	notebook.SetVExpand(true)
@@ -41,7 +42,6 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		t.widget = vteWidget
 
 		vte.SetFont(vteTerm, fontFamily, fontSize)
-
 		notebook.AppendPage(vteWidget, t.labelWidget(i))
 
 		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, t.onSpawnDone)
@@ -59,7 +59,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		}
 	}
 
-	toolbar, btns := buildToolbar(notebook, tabs)
+	toolbar, buttons := buildToolbar(notebook, tabs)
 
 	minus := shortcutButton("zoom-out", "Font −", "ctrl+-")
 	plus := shortcutButton("zoom-in", "Font +", "ctrl++")
@@ -118,20 +118,20 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 			idx := notebook.CurrentPage()
 
 			if idx >= 0 && idx < len(tabs) && tabs[idx] == t {
-				updateButtonSensitivity(btns, tabs, idx)
+				updateButtonSensitivity(buttons, tabs, idx)
 			}
 		}
 	}
 
 	notebook.ConnectSwitchPage(func(_ gtk.Widgetter, pageNum uint) {
-		updateButtonSensitivity(btns, tabs, int(pageNum))
+		updateButtonSensitivity(buttons, tabs, int(pageNum))
 
 		if int(pageNum) < len(tabs) {
 			tabs[pageNum].focus()
 		}
 	})
 
-	updateButtonSensitivity(btns, tabs, 0)
+	updateButtonSensitivity(buttons, tabs, 0)
 
 	if cfg.StartupTab != "" {
 		for i, tc := range cfg.Tabs {

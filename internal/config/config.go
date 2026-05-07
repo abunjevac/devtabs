@@ -60,10 +60,12 @@ type TabConfig struct {
 
 // Config is the top-level configuration.
 type Config struct {
-	StartupTab string      `yaml:"startup_tab"`
-	Font       string      `yaml:"font"`
-	FontSize   float64     `yaml:"font_size"`
-	Tabs       []TabConfig `yaml:"tabs"`
+	StartupTab   string      `yaml:"startup_tab"`
+	Font         string      `yaml:"font"`
+	FontSize     float64     `yaml:"font_size"`
+	WindowWidth  int         `yaml:"window_width"`
+	WindowHeight int         `yaml:"window_height"`
+	Tabs         []TabConfig `yaml:"tabs"`
 }
 
 // Load reads and validates a config file from the given path.
@@ -117,6 +119,14 @@ func applyDefaults(cfg *Config, root string) {
 
 	if cfg.FontSize == 0 {
 		cfg.FontSize = 12
+	}
+
+	if cfg.WindowWidth == 0 {
+		cfg.WindowWidth = 1200
+	}
+
+	if cfg.WindowHeight == 0 {
+		cfg.WindowHeight = 800
 	}
 
 	for i := range cfg.Tabs {

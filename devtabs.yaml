@@ -1,6 +1,8 @@
 startup_tab: go version
 font: "Google Sans Code"
 font_size: 14
+window_width: 1400
+window_height: 1000
 
 tabs:
   - name: apt update
