@@ -1,0 +1,15 @@
+startup_tab: go version
+
+tabs:
+  - name: apt update
+    command: sudo apt update
+    run_on_startup: false
+
+  - name: task check
+    command: task check
+    working_dir: /home/abunjevac/workspace/tools/devtabs
+    run_on_startup: false
+
+  - name: go version
+    command: go version
+    run_on_startup: true
