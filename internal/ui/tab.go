@@ -102,7 +102,7 @@ func (t *tab) drawDot(da *gtk.DrawingArea, cr *cairo.Context, width, height int)
 		cr.SetSourceRGB(1.0, 0.78, 0.0) // yellow
 	case stateDead:
 		cr.SetSourceRGB(0.75, 0.2, 0.2) // red
-	default:
+	case stateIdle:
 		cr.SetSourceRGB(0.55, 0.55, 0.55) // grey
 	}
 

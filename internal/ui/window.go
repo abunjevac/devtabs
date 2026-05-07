@@ -15,7 +15,7 @@ type toolbarButtons struct {
 	run, stop *gtk.Button
 }
 
-func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit,gocyclo
+func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit,gocyclo,cyclop
 	win := gtk.NewApplicationWindow(app)
 
 	win.SetTitle("devtabs")
@@ -31,7 +31,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	fontFamily := cfg.Font
 	fontSize := cfg.FontSize
 
-	var tabs []*tab
+	tabs := make([]*tab, 0, len(cfg.Tabs))
 
 	for i := range cfg.Tabs {
 		t := newTab(&cfg.Tabs[i])
@@ -71,6 +71,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	minus.ConnectClicked(func() {
 		if fontSize > 6 {
 			fontSize--
+
 			applyFont()
 		}
 	})
@@ -78,6 +79,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	plus.ConnectClicked(func() {
 		if fontSize < 72 {
 			fontSize++
+
 			applyFont()
 		}
 	})
@@ -143,7 +145,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		}
 	}
 
-	win.ConnectCloseRequest(func() (ok bool) {
+	win.ConnectCloseRequest(func() bool {
 		for _, t := range tabs {
 			t.close()
 		}
@@ -164,7 +166,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	keyCtrl.SetPropagationPhase(gtk.PhaseCapture)
 	win.AddController(keyCtrl)
 
-	keyCtrl.ConnectKeyPressed(func(key, _ uint, state gdk.ModifierType) (ok bool) {
+	keyCtrl.ConnectKeyPressed(func(key, _ uint, state gdk.ModifierType) bool {
 		switch {
 		case state&gdk.AltMask != 0 && key >= uint('1') && key <= uint('9'):
 			n := int(key - uint('1'))

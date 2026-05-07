@@ -68,6 +68,7 @@ func goVteSpawnDone(callbackID C.int, pid C.int, ptyFd C.int, errMsg *C.char) {
 	}
 
 	var goErr error
+
 	if errMsg != nil {
 		goErr = errors.New(C.GoString(errMsg))
 	}
@@ -98,13 +99,14 @@ type Terminal struct {
 // NewTerminal creates a new VteTerminal and returns it alongside a gtk.Widgetter
 // suitable for embedding in a GtkNotebook page.
 func NewTerminal() (*Terminal, gtk.Widgetter) {
-	gwidget := C.vte_terminal_new()
-	ptr := (*C.VteTerminal)(unsafe.Pointer(gwidget))
+	terminal := C.vte_terminal_new()
+	ptr := (*C.VteTerminal)(unsafe.Pointer(terminal))
 	t := &Terminal{ptr: ptr}
 
-	obj := coreglib.Take(unsafe.Pointer(gwidget))
+	obj := coreglib.Take(unsafe.Pointer(terminal))
 	casted := obj.WalkCast(func(o coreglib.Objector) bool {
 		_, ok := o.(gtk.Widgetter)
+
 		return ok
 	})
 
@@ -120,12 +122,15 @@ func NewTerminal() (*Terminal, gtk.Widgetter) {
 // cb is called on the GTK main thread with the shell PID and PTY fd.
 func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb SpawnCallback) {
 	id := registerSpawnCallback(cb)
+
 	argv := buildArgv(shell, shellArgs)
 	defer freeArgv(argv)
 
 	var cwd *C.char
+
 	if workingDir != "" {
 		cwd = C.CString(workingDir)
+
 		defer C.free(unsafe.Pointer(cwd))
 	}
 
@@ -135,6 +140,7 @@ func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb Sp
 // ConnectChildExited wires the child-exited VTE signal.
 func ConnectChildExited(t *Terminal, cb ChildExitedCallback) {
 	id := registerChildExitedCallback(cb)
+
 	C.vteConnectChildExited(t.ptr, C.int(id))
 }
 
@@ -142,6 +148,7 @@ func ConnectChildExited(t *Terminal, cb ChildExitedCallback) {
 func SetFont(t *Terminal, family string, size float64) {
 	desc := fmt.Sprintf("%s %g", family, size)
 	cs := C.CString(desc)
+
 	defer C.free(unsafe.Pointer(cs))
 
 	C.vteSetFont(t.ptr, cs)
@@ -154,6 +161,7 @@ func FeedChild(t *Terminal, data string) {
 	}
 
 	cs := C.CString(data)
+
 	defer C.free(unsafe.Pointer(cs))
 
 	C.vteFeedChild(t.ptr, cs, C.int(len(data)))
@@ -161,6 +169,7 @@ func FeedChild(t *Terminal, data string) {
 
 func buildArgv(shell string, args []string) []*C.char {
 	argv := make([]*C.char, 0, len(args)+2)
+
 	argv = append(argv, C.CString(shell))
 
 	for _, a := range args {
