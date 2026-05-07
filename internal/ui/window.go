@@ -178,6 +178,24 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 			return true
 
+		case state&gdk.ControlMask != 0 && (key == gdk.KEY_plus || key == gdk.KEY_equal || key == gdk.KEY_KP_Add):
+			if fontSize < 72 {
+				fontSize++
+
+				applyFont()
+			}
+
+			return true
+
+		case state&gdk.ControlMask != 0 && (key == gdk.KEY_minus || key == gdk.KEY_KP_Subtract):
+			if fontSize > 6 {
+				fontSize--
+
+				applyFont()
+			}
+
+			return true
+
 		case state&gdk.ControlMask != 0 && key == uint('q'):
 			win.Close()
 
