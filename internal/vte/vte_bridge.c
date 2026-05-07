@@ -11,6 +11,7 @@ static void vteSpawnBridge(VteTerminal *terminal, GPid pid, GError *error, gpoin
         errMsg = error->message;
     } else {
         VtePty *pty = vte_terminal_get_pty(terminal);
+
         if (pty != NULL) {
             ptyFd = vte_pty_get_fd(pty);
         }
@@ -41,6 +42,7 @@ void vteSpawnAsync(VteTerminal *terminal, const char *workingDir,
 // child-exited signal callback.
 static void vteChildExitedBridge(VteTerminal *terminal, int status, gpointer user_data) {
     (void)terminal;
+
     goVteChildExited((int)(intptr_t)user_data, status);
 }
 
@@ -59,9 +61,11 @@ void vteFeedChild(VteTerminal *terminal, const char *data, int len) {
 // Set the terminal font from a Pango font description string (e.g. "Monospace 12").
 void vteSetFont(VteTerminal *terminal, const char *desc_str) {
     PangoFontDescription *desc = pango_font_description_from_string(desc_str);
+
     if (desc == NULL) {
         return;
     }
+
     vte_terminal_set_font(terminal, desc);
     pango_font_description_free(desc);
 }

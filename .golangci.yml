@@ -29,8 +29,6 @@ linters:
       enable-all: true
   exclusions:
     generated: lax
-    paths:
-      - internal/vte/
     presets:
       - comments
       - common-false-positives

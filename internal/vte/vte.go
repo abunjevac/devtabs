@@ -22,14 +22,15 @@ type SpawnCallback func(pid int, ptyFd uintptr, err error)
 // ChildExitedCallback is called on the GTK main thread when the shell exits.
 type ChildExitedCallback func(status int)
 
+//nolint:gochecknoglobals
 var (
 	spawnMu       sync.Mutex
-	spawnRegistry = make(map[int]SpawnCallback)
 	nextSpawnID   atomic.Int64
+	spawnRegistry = make(map[int]SpawnCallback)
 
 	exitMu       sync.Mutex
-	exitRegistry = make(map[int]ChildExitedCallback)
 	nextTabID    atomic.Int64
+	exitRegistry = make(map[int]ChildExitedCallback)
 )
 
 // registerSpawnCallback stores cb and returns an ID to pass to SpawnAsync.
@@ -130,8 +131,7 @@ func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb Sp
 
 	if workingDir != "" {
 		cwd = C.CString(workingDir)
-
-		defer C.free(unsafe.Pointer(cwd))
+		defer C.free(unsafe.Pointer(cwd)) //nolint:nlreturn // wtf?
 	}
 
 	C.vteSpawnAsync(t.ptr, cwd, &argv[0], C.int(id))
@@ -147,9 +147,9 @@ func ConnectChildExited(t *Terminal, cb ChildExitedCallback) {
 // SetFont applies a Pango font description to the terminal (e.g. family="Monospace", size=12).
 func SetFont(t *Terminal, family string, size float64) {
 	desc := fmt.Sprintf("%s %g", family, size)
-	cs := C.CString(desc)
 
-	defer C.free(unsafe.Pointer(cs))
+	cs := C.CString(desc)
+	defer C.free(unsafe.Pointer(cs)) //nolint:nlreturn // wtf?
 
 	C.vteSetFont(t.ptr, cs)
 }
@@ -161,8 +161,7 @@ func FeedChild(t *Terminal, data string) {
 	}
 
 	cs := C.CString(data)
-
-	defer C.free(unsafe.Pointer(cs))
+	defer C.free(unsafe.Pointer(cs)) //nolint:nlreturn // wtf?
 
 	C.vteFeedChild(t.ptr, cs, C.int(len(data)))
 }
