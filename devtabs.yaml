@@ -11,7 +11,6 @@ tabs:
 
   - name: task check
     command: task check
-    working_dir: /home/abunjevac/workspace/tools/devtabs
     run_on_startup: false
 
   - name: go version
