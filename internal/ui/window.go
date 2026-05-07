@@ -324,6 +324,7 @@ func restartProcess() {
 		return
 	}
 
+	//nolint:gosec // restarting the same binary with the original arguments is intentional
 	cmd := exec.Command(exe, os.Args[1:]...)
 
 	cmd.Stdin = os.Stdin
