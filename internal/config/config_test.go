@@ -1,6 +1,8 @@
 package config_test
 
 import (
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +11,32 @@ import (
 
 	"github.com/abunjevac/devtabs/internal/config"
 )
+
+func TestTildeExpansion(t *testing.T) {
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"~/projects/app", home + "/projects/app"},
+		{"/absolute/path", "/absolute/path"},
+		{"relative/path", "relative/path"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			yaml := "tabs:\n  - name: t\n    command: x\n    working_dir: " + tc.input
+
+			cfg, err := config.LoadBytes([]byte(yaml))
+			require.NoError(t, err)
+
+			assert.True(t, strings.HasPrefix(cfg.Tabs[0].WorkingDir, tc.want),
+				"got %q, want prefix %q", cfg.Tabs[0].WorkingDir, tc.want)
+		})
+	}
+}
 
 func TestFlexBoolUnmarshal(t *testing.T) {
 	tests := []struct {

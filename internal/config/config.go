@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -140,7 +141,9 @@ func applyDefaults(cfg *Config, root string) {
 			tab.ShellArgs = []string{"-l"}
 		}
 
-		if root != "" && tab.WorkingDir == "" {
+		if tab.WorkingDir != "" {
+			tab.WorkingDir = expandTilde(tab.WorkingDir)
+		} else if root != "" {
 			tab.WorkingDir = root
 		}
 	}
@@ -176,6 +179,19 @@ func validate(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func expandTilde(path string) string {
+	if path != "~" && !strings.HasPrefix(path, "~/") {
+		return path
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
+	}
+
+	return filepath.Join(home, path[1:])
 }
 
 func validatePaths(cfg *Config) error {
