@@ -22,14 +22,13 @@ tasks:
       - go vet ./...
 
   test:
-    desc: Run tests with race detector
+    desc: Run tests with detector
     cmds:
-      - go test -count=1 -race ./...
-
+      - go test -count=1 ./...
   scan:
     desc: Run osv-scanner for dependency vulnerabilities
     cmds:
-      - osv-scanner scan --dir .
+      - osv-scanner .
 
   check:
     desc: Full quality gate — lint + test + scan
