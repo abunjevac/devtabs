@@ -1,5 +1,11 @@
 # devtabs
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](go.mod)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey?logo=linux&logoColor=white)](https://github.com/abunjevac/devtabs)
+[![Release](https://img.shields.io/github/v/release/abunjevac/devtabs)](https://github.com/abunjevac/devtabs/releases)
+[![Build](https://github.com/abunjevac/devtabs/actions/workflows/build.yml/badge.svg)](https://github.com/abunjevac/devtabs/actions/workflows/build.yml)
+
 A Linux desktop terminal launcher that opens multiple named terminal tabs from a single YAML config file. Each tab runs
 its own shell with an optional command, working directory, and startup behaviour.
 
@@ -96,7 +102,7 @@ tabs:
     run_on_startup: true
     startup_delay: 0s
     shell: /bin/zsh
-    shell_args: ["-l"]
+    shell_args: [ "-l" ]
 
   - name: worker
     command: npm run worker
@@ -104,14 +110,14 @@ tabs:
     run_on_startup: true
     startup_delay: 3s               # wait 3 s after launch before running
     shell: /bin/zsh
-    shell_args: ["-l"]
+    shell_args: [ "-l" ]
 
   - name: shell
     command: ls -la
     working_dir: ~/projects/myapp
     run_on_startup: false           # idle on start; press Run or Alt+R to execute
     shell: /bin/zsh
-    shell_args: ["-l"]
+    shell_args: [ "-l" ]
 ```
 
 ### Tab fields
