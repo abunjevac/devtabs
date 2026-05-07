@@ -1,0 +1,46 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build devtabs binary
+    cmds:
+      - go build -o devtabs .
+
+  run:
+    desc: Build and run with ./devtabs.yaml
+    cmds:
+      - task: build
+      - ./devtabs --config ./devtabs.yaml
+
+  lint:
+    desc: Run golangci-lint and go vet
+    cmds:
+      - golangci-lint run --allow-parallel-runners --timeout 5m
+      - go vet ./...
+
+  test:
+    desc: Run tests with race detector
+    cmds:
+      - go test -count=1 -race ./...
+
+  scan:
+    desc: Run osv-scanner for dependency vulnerabilities
+    cmds:
+      - osv-scanner scan --dir .
+
+  check:
+    desc: Full quality gate — lint + test + scan
+    cmds:
+      - task: lint
+      - task: test
+      - task: scan
+
+  install:
+    desc: Install devtabs to $GOPATH/bin
+    cmds:
+      - go install .
+
+  tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy
