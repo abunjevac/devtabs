@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"github.com/abunjevac/devtabs/internal/config"
 	"github.com/abunjevac/devtabs/internal/vte"
@@ -82,6 +84,27 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	toolbar.Append(fontSep)
 	toolbar.Append(minus)
 	toolbar.Append(plus)
+
+	spacer := gtk.NewBox(gtk.OrientationHorizontal, 0)
+
+	spacer.SetHExpand(true)
+
+	restartSep := gtk.NewSeparator(gtk.OrientationVertical)
+	restartBtn := gtk.NewButtonWithLabel("Restart")
+
+	restartBtn.SetFocusOnClick(false)
+
+	restartBtn.ConnectClicked(func() {
+		for _, t := range tabs {
+			t.close()
+		}
+
+		restartProcess()
+	})
+
+	toolbar.Append(spacer)
+	toolbar.Append(restartSep)
+	toolbar.Append(restartBtn)
 
 	vbox := gtk.NewBox(gtk.OrientationVertical, 0)
 
@@ -278,6 +301,30 @@ func updateButtonSensitivity(buttons toolbarButtons, tabs []*tab, idx int) {
 
 	buttons.run.SetSensitive(s == stateIdle)
 	buttons.stop.SetSensitive(s == stateRunning)
+}
+
+// restartProcess starts a fresh copy of the binary with the same arguments and exits.
+func restartProcess() {
+	exe, err := os.Executable()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "devtabs: restart: %v\n", err)
+
+		return
+	}
+
+	cmd := exec.Command(exe, os.Args[1:]...)
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "devtabs: restart: %v\n", err)
+
+		return
+	}
+
+	os.Exit(0)
 }
 
 // shortcutButton creates a button whose label shows the keyboard hint in small dimmed text.

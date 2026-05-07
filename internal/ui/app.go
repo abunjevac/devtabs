@@ -10,7 +10,7 @@ import (
 
 // Run starts the GTK application. Blocks until the window is closed.
 func Run(cfg *config.Config) {
-	app := gtk.NewApplication("io.github.abunjevac.devtabs", gio.ApplicationFlagsNone)
+	app := gtk.NewApplication("io.github.abunjevac.devtabs", gio.ApplicationNonUnique)
 
 	app.ConnectActivate(func() {
 		w := newWindow(app, cfg)
