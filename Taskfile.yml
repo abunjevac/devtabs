@@ -4,7 +4,7 @@ tasks:
   build:
     desc: Build devtabs binary
     cmds:
-      - go build -o devtabs .
+      - go build -o devtabs github.com/abunjevac/devtabs/cmd/devtabs
 
   run:
     desc: Build and run with ./devtabs.yaml
