@@ -20,6 +20,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 	win.SetTitle("devtabs")
 	win.SetDefaultSize(1200, 800)
+	win.SetIconName("utilities-terminal")
 
 	notebook := gtk.NewNotebook()
 	notebook.SetTabPos(gtk.PosBottom)
@@ -60,8 +61,8 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 	toolbar, btns := buildToolbar(notebook, tabs)
 
-	minus := gtk.NewButtonWithLabel("−")
-	plus := gtk.NewButtonWithLabel("+")
+	minus := shortcutButton("zoom-out", "Font −", "ctrl+-")
+	plus := shortcutButton("zoom-in", "Font +", "ctrl++")
 	fontSep := gtk.NewSeparator(gtk.OrientationVertical)
 
 	minus.SetFocusOnClick(false)
@@ -90,7 +91,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	spacer.SetHExpand(true)
 
 	restartSep := gtk.NewSeparator(gtk.OrientationVertical)
-	restartBtn := gtk.NewButtonWithLabel("Restart")
+	restartBtn := shortcutButton("view-refresh", "Restart", "")
 
 	restartBtn.SetFocusOnClick(false)
 
@@ -174,6 +175,15 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 				return true
 			}
 
+		case state&gdk.AltMask != 0 && key == uint('s'):
+			idx := notebook.CurrentPage()
+
+			if idx >= 0 && idx < len(tabs) && tabs[idx].getState() == stateRunning {
+				vte.FeedChild(tabs[idx].terminal, "\x03")
+			}
+
+			return true
+
 		case state&gdk.AltMask != 0 && key == uint('r'):
 			idx := notebook.CurrentPage()
 
@@ -232,10 +242,10 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 }
 
 func buildToolbar(notebook *gtk.Notebook, tabs []*tab) (*gtk.Box, toolbarButtons) { //nolint:cyclop
-	run := shortcutButton("Run", "alt+r")
-	stop := gtk.NewButtonWithLabel("Stop")
-	runAll := shortcutButton("Run All", "alt+a")
-	stopAll := shortcutButton("Stop All", "alt+x")
+	run := shortcutButton("media-playback-start", "Run", "alt+r")
+	stop := shortcutButton("media-playback-stop", "Stop", "alt+s")
+	runAll := shortcutButton("system-run", "Run All", "alt+a")
+	stopAll := shortcutButton("process-stop", "Stop All", "alt+x")
 	sep := gtk.NewSeparator(gtk.OrientationVertical)
 
 	for _, b := range []*gtk.Button{run, stop, runAll, stopAll} {
@@ -327,13 +337,26 @@ func restartProcess() {
 	os.Exit(0)
 }
 
-// shortcutButton creates a button whose label shows the keyboard hint in small dimmed text.
-func shortcutButton(label, hint string) *gtk.Button {
+// shortcutButton creates a button with an icon, a label, and an optional keyboard hint.
+// Pass an empty hint to omit the hint text.
+func shortcutButton(iconName, label, hint string) *gtk.Button {
 	btn := gtk.NewButton()
+	img := gtk.NewImageFromIconName(iconName)
 	lbl := gtk.NewLabel("")
 
-	lbl.SetMarkup(fmt.Sprintf("%s <span size='small' alpha='50%%'>%s</span>", label, hint))
-	btn.SetChild(lbl)
+	img.SetPixelSize(16)
+
+	if hint != "" {
+		lbl.SetMarkup(fmt.Sprintf("%s <span size='small' alpha='50%%'>%s</span>", label, hint))
+	} else {
+		lbl.SetText(label)
+	}
+
+	box := gtk.NewBox(gtk.OrientationHorizontal, 4)
+
+	box.Append(img)
+	box.Append(lbl)
+	btn.SetChild(box)
 
 	return btn
 }
