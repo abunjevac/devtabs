@@ -182,6 +182,7 @@ func (t *tab) onSpawnDone(pid int, ptyFd uintptr, err error) {
 	t.mu.Unlock()
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	t.cancel = cancel
 
 	go t.pollState(ctx)
