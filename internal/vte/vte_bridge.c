@@ -1,4 +1,5 @@
 #include "vte.h"
+#include <pango/pango.h>
 
 // Spawn callback: bridges VTE async result back to Go.
 static void vteSpawnBridge(VteTerminal *terminal, GPid pid, GError *error, gpointer user_data) {
@@ -53,4 +54,14 @@ void vteConnectChildExited(VteTerminal *terminal, int tabID) {
 // Write bytes to the terminal PTY.
 void vteFeedChild(VteTerminal *terminal, const char *data, int len) {
     vte_terminal_feed_child(terminal, data, (gssize)len);
+}
+
+// Set the terminal font from a Pango font description string (e.g. "Monospace 12").
+void vteSetFont(VteTerminal *terminal, const char *desc_str) {
+    PangoFontDescription *desc = pango_font_description_from_string(desc_str);
+    if (desc == NULL) {
+        return;
+    }
+    vte_terminal_set_font(terminal, desc);
+    pango_font_description_free(desc);
 }

@@ -61,6 +61,8 @@ type TabConfig struct {
 // Config is the top-level configuration.
 type Config struct {
 	StartupTab string      `yaml:"startup_tab"`
+	Font       string      `yaml:"font"`
+	FontSize   float64     `yaml:"font_size"`
 	Tabs       []TabConfig `yaml:"tabs"`
 }
 
@@ -109,11 +111,19 @@ func LoadBytes(data []byte) (*Config, error) {
 }
 
 func applyDefaults(cfg *Config, root string) {
+	if cfg.Font == "" {
+		cfg.Font = "Monospace"
+	}
+
+	if cfg.FontSize == 0 {
+		cfg.FontSize = 12
+	}
+
 	for i := range cfg.Tabs {
 		tab := &cfg.Tabs[i]
 
 		if tab.Shell == "" {
-			tab.Shell = "/bin/bash"
+			tab.Shell = "/bin/zsh"
 		}
 
 		if len(tab.ShellArgs) == 0 {

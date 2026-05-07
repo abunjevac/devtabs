@@ -7,6 +7,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -135,6 +136,15 @@ func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb Sp
 func ConnectChildExited(t *Terminal, cb ChildExitedCallback) {
 	id := registerChildExitedCallback(cb)
 	C.vteConnectChildExited(t.ptr, C.int(id))
+}
+
+// SetFont applies a Pango font description to the terminal (e.g. family="Monospace", size=12).
+func SetFont(t *Terminal, family string, size float64) {
+	desc := fmt.Sprintf("%s %g", family, size)
+	cs := C.CString(desc)
+	defer C.free(unsafe.Pointer(cs))
+
+	C.vteSetFont(t.ptr, cs)
 }
 
 // FeedChild writes data to the terminal PTY.

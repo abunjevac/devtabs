@@ -115,7 +115,7 @@ func TestValidate(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Len(t, cfg.Tabs, 1)
-		assert.Equal(t, "/bin/bash", cfg.Tabs[0].Shell)
+		assert.Equal(t, "/bin/zsh", cfg.Tabs[0].Shell)
 		assert.Equal(t, []string{"-l"}, cfg.Tabs[0].ShellArgs)
 	})
 

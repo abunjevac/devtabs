@@ -9,3 +9,4 @@ extern void goVteChildExited(int tabID, int status);
 void vteSpawnAsync(VteTerminal *terminal, const char *workingDir, char **argv, int callbackID);
 void vteConnectChildExited(VteTerminal *terminal, int tabID);
 void vteFeedChild(VteTerminal *terminal, const char *data, int len);
+void vteSetFont(VteTerminal *terminal, const char *desc_str);

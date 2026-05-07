@@ -1,4 +1,6 @@
 startup_tab: go version
+font: "Google Sans Code"
+font_size: 14
 
 tabs:
   - name: apt update

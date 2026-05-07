@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/abunjevac/devtabs/internal/config"
 	"github.com/abunjevac/devtabs/internal/vte"
+	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
@@ -12,7 +13,6 @@ type toolbarButtons struct {
 
 func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen
 	win := gtk.NewApplicationWindow(app)
-
 	win.SetTitle("devtabs")
 	win.SetDefaultSize(1200, 800)
 
@@ -21,15 +21,19 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	notebook.SetShowBorder(false)
 	notebook.SetVExpand(true)
 
+	fontFamily := cfg.Font
+	fontSize := cfg.FontSize
+
 	var tabs []*tab
 
 	for i := range cfg.Tabs {
 		t := newTab(&cfg.Tabs[i])
 
 		vteTerm, vteWidget := vte.NewTerminal()
-
 		t.terminal = vteTerm
 		t.widget = vteWidget
+
+		vte.SetFont(vteTerm, fontFamily, fontSize)
 
 		notebook.AppendPage(vteWidget, t.labelWidget())
 
@@ -42,10 +46,37 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		tabs = append(tabs, t)
 	}
 
+	applyFont := func() {
+		for _, t := range tabs {
+			vte.SetFont(t.terminal, fontFamily, fontSize)
+		}
+	}
+
 	toolbar, btns := buildToolbar(notebook, tabs)
 
-	vbox := gtk.NewBox(gtk.OrientationVertical, 0)
+	minus := gtk.NewButtonWithLabel("−")
+	plus := gtk.NewButtonWithLabel("+")
+	fontSep := gtk.NewSeparator(gtk.OrientationVertical)
 
+	minus.ConnectClicked(func() {
+		if fontSize > 6 {
+			fontSize--
+			applyFont()
+		}
+	})
+
+	plus.ConnectClicked(func() {
+		if fontSize < 72 {
+			fontSize++
+			applyFont()
+		}
+	})
+
+	toolbar.Append(fontSep)
+	toolbar.Append(minus)
+	toolbar.Append(plus)
+
+	vbox := gtk.NewBox(gtk.OrientationVertical, 0)
 	vbox.Append(toolbar)
 	vbox.Append(notebook)
 	win.SetChild(vbox)
@@ -84,10 +115,35 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		return false
 	})
 
+	keyCtrl := gtk.NewEventControllerKey()
+
+	keyCtrl.SetPropagationPhase(gtk.PhaseCapture)
+	win.AddController(keyCtrl)
+
+	keyCtrl.ConnectKeyPressed(func(keyval, _ uint, state gdk.ModifierType) (ok bool) {
+		switch {
+		case state&gdk.AltMask != 0 && keyval >= uint('1') && keyval <= uint('9'):
+			n := int(keyval - uint('1'))
+
+			if n < len(tabs) {
+				notebook.SetCurrentPage(n)
+
+				return true
+			}
+
+		case state&gdk.ControlMask != 0 && keyval == uint('q'):
+			win.Close()
+
+			return true
+		}
+
+		return false
+	})
+
 	return win
 }
 
-func buildToolbar(notebook *gtk.Notebook, tabs []*tab) (*gtk.Box, toolbarButtons) { //nonlint:cyclop
+func buildToolbar(notebook *gtk.Notebook, tabs []*tab) (*gtk.Box, toolbarButtons) { //nolint:cyclop
 	run := gtk.NewButtonWithLabel("Run")
 	stop := gtk.NewButtonWithLabel("Stop")
 	runAll := gtk.NewButtonWithLabel("Run All")
