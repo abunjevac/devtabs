@@ -93,6 +93,10 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 	notebook.ConnectSwitchPage(func(_ gtk.Widgetter, pageNum uint) {
 		updateButtonSensitivity(btns, tabs, int(pageNum))
+
+		if int(pageNum) < len(tabs) {
+			tabs[pageNum].focus()
+		}
 	})
 
 	updateButtonSensitivity(btns, tabs, 0)
@@ -113,6 +117,14 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		}
 
 		return false
+	})
+
+	win.ConnectMap(func() {
+		idx := notebook.CurrentPage()
+
+		if idx >= 0 && idx < len(tabs) {
+			tabs[idx].focus()
+		}
 	})
 
 	keyCtrl := gtk.NewEventControllerKey()

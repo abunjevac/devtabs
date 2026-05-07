@@ -45,6 +45,13 @@ func newTab(cfg *config.TabConfig) *tab {
 	return &tab{cfg: cfg}
 }
 
+// focus moves keyboard focus to the VTE terminal widget.
+func (t *tab) focus() {
+	if w, ok := t.widget.(*gtk.Widget); ok {
+		w.GrabFocus()
+	}
+}
+
 func (t *tab) labelWidget() gtk.Widgetter {
 	dot := gtk.NewDrawingArea()
 
