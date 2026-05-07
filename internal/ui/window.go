@@ -58,6 +58,9 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	plus := gtk.NewButtonWithLabel("+")
 	fontSep := gtk.NewSeparator(gtk.OrientationVertical)
 
+	minus.SetFocusOnClick(false)
+	plus.SetFocusOnClick(false)
+
 	minus.ConnectClicked(func() {
 		if fontSize > 6 {
 			fontSize--
@@ -143,6 +146,33 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 				return true
 			}
 
+		case state&gdk.AltMask != 0 && keyval == uint('r'):
+			idx := notebook.CurrentPage()
+
+			if idx >= 0 && idx < len(tabs) && tabs[idx].getState() == stateIdle {
+				tabs[idx].runCommand()
+			}
+
+			return true
+
+		case state&gdk.AltMask != 0 && keyval == uint('a'):
+			for _, t := range tabs {
+				if t.getState() == stateIdle {
+					t.runCommand()
+				}
+			}
+
+			return true
+
+		case state&gdk.AltMask != 0 && keyval == uint('x'):
+			for _, t := range tabs {
+				if t.getState() == stateRunning {
+					vte.FeedChild(t.terminal, "\x03")
+				}
+			}
+
+			return true
+
 		case state&gdk.ControlMask != 0 && keyval == uint('q'):
 			win.Close()
 
@@ -161,6 +191,10 @@ func buildToolbar(notebook *gtk.Notebook, tabs []*tab) (*gtk.Box, toolbarButtons
 	runAll := gtk.NewButtonWithLabel("Run All")
 	stopAll := gtk.NewButtonWithLabel("Stop All")
 	sep := gtk.NewSeparator(gtk.OrientationVertical)
+
+	for _, b := range []*gtk.Button{run, stop, runAll, stopAll} {
+		b.SetFocusOnClick(false)
+	}
 
 	run.ConnectClicked(func() {
 		idx := notebook.CurrentPage()
