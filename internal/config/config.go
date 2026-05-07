@@ -6,54 +6,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
-
-// Duration wraps time.Duration for YAML parsing of Go duration strings.
-type Duration struct {
-	time.Duration
-}
-
-func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
-	dur, err := time.ParseDuration(value.Value)
-	if err != nil {
-		return fmt.Errorf("invalid duration %q: %w", value.Value, err)
-	}
-
-	if dur < 0 {
-		return fmt.Errorf("startup_delay must be >= 0, got %s", value.Value)
-	}
-
-	d.Duration = dur
-
-	return nil
-}
-
-// FlexBool accepts true/false/yes/no/on/off/1/0 (case-insensitive).
-// yaml.v3 follows YAML 1.2 where "yes"/"on" are plain strings, not booleans.
-type FlexBool bool
-
-func (b *FlexBool) UnmarshalYAML(value *yaml.Node) error {
-	switch strings.ToLower(value.Value) {
-	case "true", "yes", "on", "1":
-		*b = true
-	case "false", "no", "off", "0":
-		*b = false
-	default:
-		return fmt.Errorf("invalid boolean value %q: use true/false/yes/no/on/off/1/0", value.Value)
-	}
-
-	return nil
-}
 
 // TabConfig holds the configuration for a single tab.
 type TabConfig struct {
 	Name         string   `yaml:"name"`
 	Command      string   `yaml:"command"`
 	WorkingDir   string   `yaml:"working_dir"`
-	RunOnStartup FlexBool `yaml:"run_on_startup"`
+	RunOnStartup Bool     `yaml:"run_on_startup"`
 	StartupDelay Duration `yaml:"startup_delay"`
 	Shell        string   `yaml:"shell"`
 	ShellArgs    []string `yaml:"shell_args"`
