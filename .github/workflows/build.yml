@@ -34,7 +34,8 @@ jobs:
           sudo apt install -y \
             libgtk-4-dev \
             libvte-2.91-gtk4-dev \
-            libgirepository1.0-dev
+            libgirepository1.0-dev \
+            upx
 
       - name: Build
         run: |
@@ -42,6 +43,7 @@ jobs:
             -ldflags "-X github.com/abunjevac/devtabs/internal/version.Version=${{ env.RELEASE_TAG }}" \
             -o devtabs \
             ./cmd/devtabs
+          upx -9 -q devtabs
 
       - name: Create release
         env:
