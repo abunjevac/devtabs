@@ -33,8 +33,7 @@ func TestBoolUnmarshal(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			yaml := "tabs:\n  - name: t\n    command: x\n    run_on_startup: " + tc.input
-			cfg, err := LoadBytes([]byte(yaml))
+			cfg, err := LoadFromString("tabs:\n  - name: t\n    command: x\n    run_on_startup: " + tc.input)
 
 			if tc.ok {
 				require.NoError(t, err)

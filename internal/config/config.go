@@ -39,7 +39,7 @@ func Load(path, root string) (*Config, error) {
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 
-	cfg, err := LoadBytes(data)
+	cfg, err := LoadFromString(string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +53,12 @@ func Load(path, root string) (*Config, error) {
 	return cfg, nil
 }
 
-// LoadBytes parses and validates config from raw YAML bytes.
+// LoadFromString parses and validates config from a string.
 // working_dir paths are not resolved; call Load for full validation.
-func LoadBytes(data []byte) (*Config, error) {
+func LoadFromString(data string) (*Config, error) {
 	var cfg Config
 
-	dec := yaml.NewDecoder(strings.NewReader(string(data)))
+	dec := yaml.NewDecoder(strings.NewReader(data))
 
 	dec.KnownFields(true)
 

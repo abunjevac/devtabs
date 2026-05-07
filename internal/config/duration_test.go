@@ -26,7 +26,7 @@ func TestDurationUnmarshal(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			yaml := "tabs:\n  - name: t\n    command: x\n    startup_delay: " + tc.input
-			cfg, err := LoadBytes([]byte(yaml))
+			cfg, err := LoadFromString(yaml)
 
 			if tc.ok {
 				require.NoError(t, err)
