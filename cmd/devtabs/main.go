@@ -10,12 +10,14 @@ import (
 
 	"github.com/abunjevac/devtabs/internal/config"
 	"github.com/abunjevac/devtabs/internal/ui"
+	"github.com/abunjevac/devtabs/internal/version"
 )
 
 func main() {
 	app := &cli.Command{
-		Name:  "devtabs",
-		Usage: "terminal tab launcher from YAML config",
+		Name:    "devtabs",
+		Version: version.Version,
+		Usage:   "terminal tab launcher from YAML config",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "config",

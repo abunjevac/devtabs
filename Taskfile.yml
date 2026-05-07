@@ -3,8 +3,11 @@ version: '3'
 tasks:
   build:
     desc: Build devtabs binary
+    vars:
+      VERSION:
+        sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
     cmds:
-      - go build -o devtabs github.com/abunjevac/devtabs/cmd/devtabs
+      - go build -ldflags "-X github.com/abunjevac/devtabs/internal/version.Version={{.VERSION}}" -o devtabs ./cmd/devtabs
 
   run:
     desc: Build and run with ./devtabs.yaml
@@ -44,3 +47,4 @@ tasks:
     desc: Tidy Go modules
     cmds:
       - go mod tidy
+
