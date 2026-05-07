@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/abunjevac/devtabs/internal/config"
 	"github.com/abunjevac/devtabs/internal/vte"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
@@ -11,8 +13,9 @@ type toolbarButtons struct {
 	run, stop *gtk.Button
 }
 
-func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit
+func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow { //nolint:funlen,gocognit,gocyclo
 	win := gtk.NewApplicationWindow(app)
+
 	win.SetTitle("devtabs")
 	win.SetDefaultSize(1200, 800)
 
@@ -30,12 +33,13 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 		t := newTab(&cfg.Tabs[i])
 
 		vteTerm, vteWidget := vte.NewTerminal()
+
 		t.terminal = vteTerm
 		t.widget = vteWidget
 
 		vte.SetFont(vteTerm, fontFamily, fontSize)
 
-		notebook.AppendPage(vteWidget, t.labelWidget())
+		notebook.AppendPage(vteWidget, t.labelWidget(i))
 
 		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, t.onSpawnDone)
 
@@ -80,6 +84,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	toolbar.Append(plus)
 
 	vbox := gtk.NewBox(gtk.OrientationVertical, 0)
+
 	vbox.Append(toolbar)
 	vbox.Append(notebook)
 	win.SetChild(vbox)
@@ -135,10 +140,10 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 	keyCtrl.SetPropagationPhase(gtk.PhaseCapture)
 	win.AddController(keyCtrl)
 
-	keyCtrl.ConnectKeyPressed(func(keyval, _ uint, state gdk.ModifierType) (ok bool) {
+	keyCtrl.ConnectKeyPressed(func(key, _ uint, state gdk.ModifierType) (ok bool) {
 		switch {
-		case state&gdk.AltMask != 0 && keyval >= uint('1') && keyval <= uint('9'):
-			n := int(keyval - uint('1'))
+		case state&gdk.AltMask != 0 && key >= uint('1') && key <= uint('9'):
+			n := int(key - uint('1'))
 
 			if n < len(tabs) {
 				notebook.SetCurrentPage(n)
@@ -146,7 +151,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 				return true
 			}
 
-		case state&gdk.AltMask != 0 && keyval == uint('r'):
+		case state&gdk.AltMask != 0 && key == uint('r'):
 			idx := notebook.CurrentPage()
 
 			if idx >= 0 && idx < len(tabs) && tabs[idx].getState() == stateIdle {
@@ -155,7 +160,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 			return true
 
-		case state&gdk.AltMask != 0 && keyval == uint('a'):
+		case state&gdk.AltMask != 0 && key == uint('a'):
 			for _, t := range tabs {
 				if t.getState() == stateIdle {
 					t.runCommand()
@@ -164,7 +169,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 			return true
 
-		case state&gdk.AltMask != 0 && keyval == uint('x'):
+		case state&gdk.AltMask != 0 && key == uint('x'):
 			for _, t := range tabs {
 				if t.getState() == stateRunning {
 					vte.FeedChild(t.terminal, "\x03")
@@ -173,7 +178,7 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 
 			return true
 
-		case state&gdk.ControlMask != 0 && keyval == uint('q'):
+		case state&gdk.ControlMask != 0 && key == uint('q'):
 			win.Close()
 
 			return true
@@ -186,10 +191,10 @@ func newWindow(app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow 
 }
 
 func buildToolbar(notebook *gtk.Notebook, tabs []*tab) (*gtk.Box, toolbarButtons) { //nolint:cyclop
-	run := gtk.NewButtonWithLabel("Run")
+	run := shortcutButton("Run", "alt+r")
 	stop := gtk.NewButtonWithLabel("Stop")
-	runAll := gtk.NewButtonWithLabel("Run All")
-	stopAll := gtk.NewButtonWithLabel("Stop All")
+	runAll := shortcutButton("Run All", "alt+a")
+	stopAll := shortcutButton("Stop All", "alt+x")
 	sep := gtk.NewSeparator(gtk.OrientationVertical)
 
 	for _, b := range []*gtk.Button{run, stop, runAll, stopAll} {
@@ -255,4 +260,15 @@ func updateButtonSensitivity(buttons toolbarButtons, tabs []*tab, idx int) {
 
 	buttons.run.SetSensitive(s == stateIdle)
 	buttons.stop.SetSensitive(s == stateRunning)
+}
+
+// shortcutButton creates a button whose label shows the keyboard hint in small dimmed text.
+func shortcutButton(label, hint string) *gtk.Button {
+	btn := gtk.NewButton()
+	lbl := gtk.NewLabel("")
+
+	lbl.SetMarkup(fmt.Sprintf("%s <span size='small' alpha='50%%'>%s</span>", label, hint))
+	btn.SetChild(lbl)
+
+	return btn
 }

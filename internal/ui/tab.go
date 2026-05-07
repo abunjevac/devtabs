@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"html"
 	"math"
 	"os"
 	"sync"
@@ -53,7 +54,9 @@ func (t *tab) focus() {
 	}
 }
 
-func (t *tab) labelWidget() gtk.Widgetter {
+// labelWidget returns the tab label. idx is the zero-based tab position;
+// pass -1 to suppress the Alt+N shortcut hint.
+func (t *tab) labelWidget(idx int) gtk.Widgetter {
 	dot := gtk.NewDrawingArea()
 
 	dot.SetSizeRequest(10, 10)
@@ -61,10 +64,21 @@ func (t *tab) labelWidget() gtk.Widgetter {
 
 	t.dot = dot
 
+	name := gtk.NewLabel("")
+
+	if idx >= 0 && idx < 9 {
+		name.SetMarkup(fmt.Sprintf(
+			"%s <span size='small' alpha='50%%'>alt+%d</span>",
+			html.EscapeString(t.cfg.Name), idx+1,
+		))
+	} else {
+		name.SetText(t.cfg.Name)
+	}
+
 	box := gtk.NewBox(gtk.OrientationHorizontal, 5)
 
 	box.Append(dot)
-	box.Append(gtk.NewLabel(t.cfg.Name))
+	box.Append(name)
 	box.SetVAlign(gtk.AlignCenter)
 
 	return box
