@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
@@ -29,6 +30,11 @@ func main() {
 				Name:    "root",
 				Aliases: []string{"r"},
 				Usage:   "base directory for resolving relative working_dir paths (default: config file directory)",
+			},
+			&cli.StringFlag{
+				Name:    "profile",
+				Aliases: []string{"p"},
+				Usage:   "comma-separated list of profiles to include (tabs without a profiles field are always included)",
 			},
 		},
 		Action: run,
@@ -59,7 +65,31 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("config error: %w", err)
 	}
 
-	ui.Run(ctx, cfg)
+	profiles := parseProfiles(cmd.String("profile"))
+
+	cfg, err = config.FilterByProfiles(cfg, profiles)
+	if err != nil {
+		return fmt.Errorf("profile filter: %w", err)
+	}
+
+	ui.Run(ctx, cfg, root)
 
 	return nil
+}
+
+func parseProfiles(s string) []string {
+	if s == "" {
+		return nil
+	}
+
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+
+	return out
 }

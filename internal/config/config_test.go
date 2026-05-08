@@ -34,6 +34,118 @@ func TestTildeExpansion(t *testing.T) {
 	}
 }
 
+func TestProfiles(t *testing.T) {
+	t.Run("profiles field parses", func(t *testing.T) {
+		cfg, err := config.LoadFromString("tabs:\n  - name: a\n    command: x\n    profiles: [work, dev]\n")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"work", "dev"}, cfg.Tabs[0].Profiles)
+	})
+
+	t.Run("no profiles field means always included", func(t *testing.T) {
+		cfg, err := config.LoadFromString("tabs:\n  - name: a\n    command: x\n")
+		require.NoError(t, err)
+		assert.Empty(t, cfg.Tabs[0].Profiles)
+	})
+}
+
+func TestFilterByProfiles(t *testing.T) {
+	base := func() *config.Config {
+		cfg, err := config.LoadFromString(`tabs:
+  - name: always
+    command: x
+  - name: work-only
+    command: x
+    profiles: [work]
+  - name: dev-only
+    command: x
+    profiles: [dev]
+  - name: multi
+    command: x
+    profiles: [work, dev]
+`)
+		require.NoError(t, err)
+		return cfg
+	}
+
+	t.Run("empty profiles returns all tabs", func(t *testing.T) {
+		cfg, err := config.FilterByProfiles(base(), nil)
+		require.NoError(t, err)
+		assert.Len(t, cfg.Tabs, 4)
+	})
+
+	t.Run("work profile includes always + work tabs", func(t *testing.T) {
+		cfg, err := config.FilterByProfiles(base(), []string{"work"})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"always", "work-only", "multi"}, tabNames(cfg))
+	})
+
+	t.Run("dev profile includes always + dev tabs", func(t *testing.T) {
+		cfg, err := config.FilterByProfiles(base(), []string{"dev"})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"always", "dev-only", "multi"}, tabNames(cfg))
+	})
+
+	t.Run("multiple profiles union", func(t *testing.T) {
+		cfg, err := config.FilterByProfiles(base(), []string{"work", "dev"})
+		require.NoError(t, err)
+		assert.Len(t, cfg.Tabs, 4)
+	})
+
+	t.Run("no match returns error", func(t *testing.T) {
+		cfg, err := config.LoadFromString(`tabs:
+  - name: work-only
+    command: x
+    profiles: [work]
+  - name: dev-only
+    command: x
+    profiles: [dev]
+`)
+		require.NoError(t, err)
+		_, err = config.FilterByProfiles(cfg, []string{"nonexistent"})
+		assert.Error(t, err)
+	})
+
+	t.Run("startup_tab cleared when filtered out", func(t *testing.T) {
+		cfg, err := config.LoadFromString(`startup_tab: work-only
+tabs:
+  - name: always
+    command: x
+  - name: work-only
+    command: x
+    profiles: [work]
+`)
+		require.NoError(t, err)
+
+		out, err := config.FilterByProfiles(cfg, []string{"dev"})
+		require.NoError(t, err)
+		assert.Empty(t, out.StartupTab)
+	})
+
+	t.Run("startup_tab preserved when still present", func(t *testing.T) {
+		cfg, err := config.LoadFromString(`startup_tab: always
+tabs:
+  - name: always
+    command: x
+  - name: work-only
+    command: x
+    profiles: [work]
+`)
+		require.NoError(t, err)
+
+		out, err := config.FilterByProfiles(cfg, []string{"work"})
+		require.NoError(t, err)
+		assert.Equal(t, "always", out.StartupTab)
+	})
+}
+
+func tabNames(cfg *config.Config) []string {
+	names := make([]string, len(cfg.Tabs))
+	for i, tab := range cfg.Tabs {
+		names[i] = tab.Name
+	}
+	return names
+}
+
 func TestValidate(t *testing.T) {
 	t.Run("missing name", func(t *testing.T) {
 		_, err := config.LoadFromString("tabs:\n  - command: foo\n")

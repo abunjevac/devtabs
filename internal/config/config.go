@@ -19,6 +19,7 @@ type TabConfig struct {
 	StartupDelay Duration `yaml:"startup_delay"`
 	Shell        string   `yaml:"shell"`
 	ShellArgs    []string `yaml:"shell_args"`
+	Profiles     []string `yaml:"profiles"`
 }
 
 // Config is the top-level configuration.
@@ -154,6 +155,66 @@ func expandTilde(path string) string {
 	}
 
 	return filepath.Join(home, path[1:])
+}
+
+// FilterByProfiles returns a copy of cfg with tabs filtered to those matching at
+// least one of the requested profiles. Tabs with no profiles are always included.
+// Returns an error if the filtered tab list would be empty.
+// If profiles is nil or empty, cfg is returned unchanged.
+func FilterByProfiles(cfg *Config, profiles []string) (*Config, error) {
+	if len(profiles) == 0 {
+		return cfg, nil
+	}
+
+	want := make(map[string]struct{}, len(profiles))
+	for _, p := range profiles {
+		want[p] = struct{}{}
+	}
+
+	filtered := make([]TabConfig, 0, len(cfg.Tabs))
+
+	for _, tab := range cfg.Tabs {
+		if tabMatchesProfiles(tab, want) {
+			filtered = append(filtered, tab)
+		}
+	}
+
+	if len(filtered) == 0 {
+		return nil, fmt.Errorf("no tabs match profiles: %s", strings.Join(profiles, ", "))
+	}
+
+	out := *cfg
+	out.Tabs = filtered
+
+	if out.StartupTab != "" && !tabNamesContain(filtered, out.StartupTab) {
+		out.StartupTab = ""
+	}
+
+	return &out, nil
+}
+
+func tabMatchesProfiles(tab TabConfig, want map[string]struct{}) bool {
+	if len(tab.Profiles) == 0 {
+		return true
+	}
+
+	for _, p := range tab.Profiles {
+		if _, ok := want[p]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func tabNamesContain(tabs []TabConfig, name string) bool {
+	for _, tab := range tabs {
+		if tab.Name == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func validatePaths(cfg *Config) error {
