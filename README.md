@@ -21,7 +21,8 @@ Built with GTK4 and VTE.
 - **Auto-run on startup** — optional `run_on_startup` with configurable `startup_delay`
 - **Font scaling** — `Ctrl++` / `Ctrl+-` to adjust terminal font size at runtime
 - **Startup tab** — configure which tab receives focus on launch
-- **Restart** — reload all terminals without closing the window
+- **Profile filtering** — tag tabs with profiles and pass `--profile work,dev` to show only matching tabs
+- **Hamburger menu** — open a terminal or file manager in the config file's directory, or restart
 - **Keyboard shortcuts** — `Alt+1`–`9` to switch tabs, `Alt+R/S/A/X` for run/stop, `Ctrl+Q` to quit
 - **Version in titlebar** — shows the release version at a glance
 
@@ -68,17 +69,20 @@ task build          # requires Task — https://taskfile.dev
 ## Usage
 
 ```
-devtabs [--config <path>] [--root <dir>]
+devtabs [--config <path>] [--root <dir>] [--profile <profiles>]
 ```
 
-| Flag             | Default               | Description                                               |
-|------------------|-----------------------|-----------------------------------------------------------|
-| `--config`, `-c` | `./devtabs.yaml`      | Path to the YAML config file                              |
-| `--root`, `-r`   | config file directory | Base directory for resolving relative `working_dir` paths |
+| Flag              | Default               | Description                                                                                                     |
+|-------------------|-----------------------|-----------------------------------------------------------------------------------------------------------------|
+| `--config`, `-c`  | `./devtabs.yaml`      | Path to the YAML config file                                                                                    |
+| `--root`, `-r`    | config file directory | Base directory for resolving relative `working_dir` paths                                                       |
+| `--profile`, `-p` | _(all tabs)_          | Comma-separated profile names; only matching tabs are shown (tabs with no `profiles` field are always included) |
 
 ```bash
-devtabs                              # uses ./devtabs.yaml
+devtabs                                    # uses ./devtabs.yaml, shows all tabs
 devtabs --config ~/projects/work.yaml
+devtabs --profile work                     # show tabs tagged "work" plus untagged tabs
+devtabs --profile work,dev                 # union of "work" and "dev" profiles
 devtabs --version
 ```
 
@@ -103,6 +107,7 @@ tabs:
     startup_delay: 0s
     shell: /bin/zsh
     shell_args: [ "-l" ]
+    profiles: [ work ]              # only shown when --profile work (or no --profile)
 
   - name: worker
     command: npm run worker
@@ -111,6 +116,7 @@ tabs:
     startup_delay: 3s               # wait 3 s after launch before running
     shell: /bin/zsh
     shell_args: [ "-l" ]
+    profiles: [ work ]
 
   - name: shell
     command: ls -la
@@ -118,19 +124,21 @@ tabs:
     run_on_startup: false           # idle on start; press Run or Alt+R to execute
     shell: /bin/zsh
     shell_args: [ "-l" ]
+    # no profiles: always shown regardless of --profile
 ```
 
 ### Tab fields
 
-| Field            | Required | Default               | Description                                                  |
-|------------------|----------|-----------------------|--------------------------------------------------------------|
-| `name`           | yes      | —                     | Unique label shown on the tab                                |
-| `command`        | yes      | —                     | Command written to the shell when Run is triggered           |
-| `working_dir`    | no       | config file directory | Shell's working directory                                    |
-| `run_on_startup` | no       | `false`               | Run the command automatically when the app starts            |
-| `startup_delay`  | no       | `0s`                  | Delay before auto-running (Go duration: `500ms`, `2s`, `1m`) |
-| `shell`          | no       | `/bin/zsh`            | Shell binary                                                 |
-| `shell_args`     | no       | `["-l"]`              | Arguments passed to the shell                                |
+| Field            | Required | Default               | Description                                                                   |
+|------------------|----------|-----------------------|-------------------------------------------------------------------------------|
+| `name`           | yes      | —                     | Unique label shown on the tab                                                 |
+| `command`        | yes      | —                     | Command written to the shell when Run is triggered                            |
+| `working_dir`    | no       | config file directory | Shell's working directory                                                     |
+| `run_on_startup` | no       | `false`               | Run the command automatically when the app starts                             |
+| `startup_delay`  | no       | `0s`                  | Delay before auto-running (Go duration: `500ms`, `2s`, `1m`)                  |
+| `shell`          | no       | `/bin/zsh`            | Shell binary                                                                  |
+| `shell_args`     | no       | `["-l"]`              | Arguments passed to the shell                                                 |
+| `profiles`       | no       | _(always shown)_      | List of profile names; tab is shown only when `--profile` matches one of them |
 
 `run_on_startup` accepts `true`/`false`, `yes`/`no`, `on`/`off`, or `1`/`0`.
 
@@ -148,6 +156,18 @@ tabs:
 | `Ctrl++`          | Increase font size         |
 | `Ctrl+-`          | Decrease font size         |
 | `Ctrl+Q`          | Quit                       |
+
+## Toolbar menu
+
+The `☰` button on the right side of the toolbar opens a menu with:
+
+| Action             | Description                                                         |
+|--------------------|---------------------------------------------------------------------|
+| Open Terminal Here | Opens a new terminal in the directory containing the config file    |
+| Open Files Here    | Opens the file manager in the directory containing the config file  |
+| Restart            | Closes all terminals and relaunches devtabs with the same arguments |
+
+Supported terminal emulators (tried in order): `x-terminal-emulator`, `gnome-terminal`, `xfce4-terminal`, `konsole`.
 
 ---
 
