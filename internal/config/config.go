@@ -167,6 +167,7 @@ func FilterByProfiles(cfg *Config, profiles []string) (*Config, error) {
 	}
 
 	want := make(map[string]struct{}, len(profiles))
+
 	for _, p := range profiles {
 		want[p] = struct{}{}
 	}

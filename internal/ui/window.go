@@ -334,18 +334,21 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	popover := gtk.NewPopover()
 
 	openTermBtn := menuItem("utilities-terminal", "Open Terminal Here")
+
 	openTermBtn.ConnectClicked(func() { //nolint:contextcheck
 		popover.Popdown()
 		openTerminal(w.configDir)
 	})
 
 	openFilesBtn := menuItem("system-file-manager", "Open Files Here")
+
 	openFilesBtn.ConnectClicked(func() { //nolint:contextcheck
 		popover.Popdown()
 		openFileManager(w.configDir)
 	})
 
 	restartBtn := menuItem("view-refresh", "Restart")
+
 	restartBtn.ConnectClicked(func() {
 		popover.Popdown()
 
@@ -357,12 +360,14 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	})
 
 	quitBtn := menuItem("application-exit", "Quit")
+
 	quitBtn.ConnectClicked(func() {
 		popover.Popdown()
 		w.win.Close()
 	})
 
 	popoverBox := gtk.NewBox(gtk.OrientationVertical, 2)
+
 	popoverBox.SetMarginTop(4)
 	popoverBox.SetMarginBottom(4)
 	popoverBox.SetMarginStart(4)
@@ -376,6 +381,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	popover.SetChild(popoverBox)
 
 	menuBtn := gtk.NewMenuButton()
+
 	menuBtn.SetIconName("open-menu-symbolic")
 	menuBtn.SetPopover(popover)
 	menuBtn.SetFocusOnClick(false)
@@ -386,17 +392,21 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 // menuItem creates a frameless, left-aligned button with an icon and label for use in a popover menu.
 func menuItem(iconName, label string) *gtk.Button {
 	img := gtk.NewImageFromIconName(iconName)
+
 	img.SetPixelSize(16)
 
 	lbl := gtk.NewLabel(label)
+
 	lbl.SetHAlign(gtk.AlignStart)
 	lbl.SetHExpand(true)
 
 	row := gtk.NewBox(gtk.OrientationHorizontal, 8)
+
 	row.Append(img)
 	row.Append(lbl)
 
 	btn := gtk.NewButton()
+
 	btn.SetChild(row)
 	btn.SetHasFrame(false)
 	btn.SetFocusOnClick(false)
