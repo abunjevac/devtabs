@@ -26,12 +26,14 @@ type appWindow struct {
 
 	fontFamily string
 	fontSize   float64
+	configDir  string
 }
 
-func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config) *gtk.ApplicationWindow {
+func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, configDir string) *gtk.ApplicationWindow {
 	w := &appWindow{
 		fontFamily: cfg.Font,
 		fontSize:   cfg.FontSize,
+		configDir:  configDir,
 	}
 
 	w.win = gtk.NewApplicationWindow(app)
@@ -108,22 +110,12 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	minus.ConnectClicked(w.decreaseFont)
 	plus.ConnectClicked(w.increaseFont)
 
-	restartBtn := shortcutButton("view-refresh", "Restart", "")
-
-	restartBtn.SetFocusOnClick(false)
-	restartBtn.ConnectClicked(func() {
-		for _, t := range w.tabs {
-			t.close()
-		}
-
-		restartProcess(ctx)
-	})
-
 	w.buttons = toolbarButtons{run: run, stop: stop}
 
 	spacer := gtk.NewBox(gtk.OrientationHorizontal, 0)
-
 	spacer.SetHExpand(true)
+
+	menuBtn := w.buildMenuButton(ctx)
 
 	box := gtk.NewBox(gtk.OrientationHorizontal, 4)
 
@@ -140,8 +132,7 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	box.Append(minus)
 	box.Append(plus)
 	box.Append(spacer)
-	box.Append(gtk.NewSeparator(gtk.OrientationVertical))
-	box.Append(restartBtn)
+	box.Append(menuBtn)
 
 	return box
 }
@@ -337,6 +328,109 @@ func restartProcess(ctx context.Context) {
 	}
 
 	os.Exit(0)
+}
+
+func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
+	popover := gtk.NewPopover()
+
+	openTermBtn := menuItem("utilities-terminal", "Open Terminal Here")
+	openTermBtn.ConnectClicked(func() { //nolint:contextcheck
+		popover.Popdown()
+		openTerminal(w.configDir)
+	})
+
+	openFilesBtn := menuItem("system-file-manager", "Open Files Here")
+	openFilesBtn.ConnectClicked(func() { //nolint:contextcheck
+		popover.Popdown()
+		openFileManager(w.configDir)
+	})
+
+	restartBtn := menuItem("view-refresh", "Restart")
+	restartBtn.ConnectClicked(func() {
+		popover.Popdown()
+
+		for _, t := range w.tabs {
+			t.close()
+		}
+
+		restartProcess(ctx)
+	})
+
+	quitBtn := menuItem("application-exit", "Quit")
+	quitBtn.ConnectClicked(func() {
+		popover.Popdown()
+		w.win.Close()
+	})
+
+	popoverBox := gtk.NewBox(gtk.OrientationVertical, 2)
+	popoverBox.SetMarginTop(4)
+	popoverBox.SetMarginBottom(4)
+	popoverBox.SetMarginStart(4)
+	popoverBox.SetMarginEnd(4)
+	popoverBox.Append(openTermBtn)
+	popoverBox.Append(openFilesBtn)
+	popoverBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+	popoverBox.Append(restartBtn)
+	popoverBox.Append(quitBtn)
+
+	popover.SetChild(popoverBox)
+
+	menuBtn := gtk.NewMenuButton()
+	menuBtn.SetIconName("open-menu-symbolic")
+	menuBtn.SetPopover(popover)
+	menuBtn.SetFocusOnClick(false)
+
+	return menuBtn
+}
+
+// menuItem creates a frameless, left-aligned button with an icon and label for use in a popover menu.
+func menuItem(iconName, label string) *gtk.Button {
+	img := gtk.NewImageFromIconName(iconName)
+	img.SetPixelSize(16)
+
+	lbl := gtk.NewLabel(label)
+	lbl.SetHAlign(gtk.AlignStart)
+	lbl.SetHExpand(true)
+
+	row := gtk.NewBox(gtk.OrientationHorizontal, 8)
+	row.Append(img)
+	row.Append(lbl)
+
+	btn := gtk.NewButton()
+	btn.SetChild(row)
+	btn.SetHasFrame(false)
+	btn.SetFocusOnClick(false)
+
+	return btn
+}
+
+func openTerminal(dir string) {
+	type entry struct {
+		bin  string
+		args []string
+	}
+
+	candidates := []entry{
+		{"x-terminal-emulator", []string{"--working-directory=" + dir}},
+		{"gnome-terminal", []string{"--working-directory=" + dir}},
+		{"xfce4-terminal", []string{"--working-directory=" + dir}},
+		{"konsole", []string{"--workdir", dir}},
+	}
+
+	for _, c := range candidates {
+		path, err := exec.LookPath(c.bin)
+		if err != nil {
+			continue
+		}
+
+		_ = exec.CommandContext(context.Background(), path, c.args...).Start()
+
+		return
+	}
+}
+
+func openFileManager(dir string) {
+	_ = exec.CommandContext(context.Background(), "xdg-open", dir).Start()
 }
 
 // shortcutButton creates a button with an icon, a label, and an optional keyboard hint.
