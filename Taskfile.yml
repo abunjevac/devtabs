@@ -5,7 +5,7 @@ tasks:
     desc: Build devtabs binary
     vars:
       VERSION:
-        sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+        sh: git tag -l | head -1 2>/dev/null || echo "dev"
     cmds:
       - go build -ldflags "-X github.com/abunjevac/devtabs/internal/version.Version={{.VERSION}}" -o devtabs ./cmd/devtabs
 
