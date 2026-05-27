@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/abunjevac/devtabs/internal/config"
-	"github.com/abunjevac/devtabs/internal/version"
 	"github.com/abunjevac/devtabs/internal/vte"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -38,7 +37,7 @@ func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, co
 
 	w.win = gtk.NewApplicationWindow(app)
 
-	w.win.SetTitle("devtabs " + version.Version)
+	w.win.SetTitle(cfg.Title)
 	w.win.SetDefaultSize(cfg.WindowWidth, cfg.WindowHeight)
 	w.win.SetIconName("utilities-terminal")
 

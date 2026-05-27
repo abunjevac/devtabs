@@ -1,12 +1,14 @@
 package config
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/abunjevac/devtabs/internal/version"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,6 +31,7 @@ type Config struct {
 	FontSize     float64     `yaml:"font_size"`
 	WindowWidth  int         `yaml:"window_width"`
 	WindowHeight int         `yaml:"window_height"`
+	Title        string      `yaml:"title"`
 	Tabs         []TabConfig `yaml:"tabs"`
 }
 
@@ -77,28 +80,16 @@ func LoadFromString(data string) (*Config, error) {
 }
 
 func applyDefaults(cfg *Config, root string) {
-	if cfg.Font == "" {
-		cfg.Font = "Monospace"
-	}
-
-	if cfg.FontSize == 0 {
-		cfg.FontSize = 12
-	}
-
-	if cfg.WindowWidth == 0 {
-		cfg.WindowWidth = 1200
-	}
-
-	if cfg.WindowHeight == 0 {
-		cfg.WindowHeight = 800
-	}
+	cfg.Font = cmp.Or(cfg.Font, "Monospace")
+	cfg.FontSize = cmp.Or(cfg.FontSize, 12)
+	cfg.WindowWidth = cmp.Or(cfg.WindowWidth, 1200)
+	cfg.WindowHeight = cmp.Or(cfg.WindowHeight, 800)
+	cfg.Title = cmp.Or(cfg.Title, "devtabs "+version.Version)
 
 	for i := range cfg.Tabs {
 		tab := &cfg.Tabs[i]
 
-		if tab.Shell == "" {
-			tab.Shell = "/bin/zsh"
-		}
+		tab.Shell = cmp.Or(tab.Shell, "/bin/zsh")
 
 		if len(tab.ShellArgs) == 0 {
 			tab.ShellArgs = []string{"-l"}
