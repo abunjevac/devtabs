@@ -42,6 +42,7 @@ func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, co
 	w.win.SetIconName("utilities-terminal")
 
 	w.notebook = gtk.NewNotebook()
+
 	w.notebook.SetTabPos(gtk.PosBottom)
 	w.notebook.SetShowBorder(false)
 	w.notebook.SetVExpand(true)
@@ -336,6 +337,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 
 	openTermBtn.ConnectClicked(func() { //nolint:contextcheck
 		popover.Popdown()
+
 		openTerminal(w.configDir)
 	})
 
@@ -343,6 +345,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 
 	openFilesBtn.ConnectClicked(func() { //nolint:contextcheck
 		popover.Popdown()
+
 		openFileManager(w.configDir)
 	})
 
@@ -411,35 +414,6 @@ func menuItem(iconName, label string) *gtk.Button {
 	btn.SetFocusOnClick(false)
 
 	return btn
-}
-
-func openTerminal(dir string) {
-	type entry struct {
-		bin  string
-		args []string
-	}
-
-	candidates := []entry{
-		{"x-terminal-emulator", []string{"--working-directory=" + dir}},
-		{"gnome-terminal", []string{"--working-directory=" + dir}},
-		{"xfce4-terminal", []string{"--working-directory=" + dir}},
-		{"konsole", []string{"--workdir", dir}},
-	}
-
-	for _, c := range candidates {
-		path, err := exec.LookPath(c.bin)
-		if err != nil {
-			continue
-		}
-
-		_ = exec.CommandContext(context.Background(), path, c.args...).Start()
-
-		return
-	}
-}
-
-func openFileManager(dir string) {
-	_ = exec.CommandContext(context.Background(), "xdg-open", dir).Start()
 }
 
 // shortcutButton creates a button with an icon, a label, and an optional keyboard hint.
