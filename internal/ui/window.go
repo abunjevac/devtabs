@@ -336,20 +336,33 @@ func (w *appWindow) applyFont() {
 
 func (w *appWindow) openCurrentTerminal(ctx context.Context) {
 	if dir, ok := w.currentTabDir(); ok {
-		openTerminal(ctx, dir, w.terminal)
+		if err := openTerminal(ctx, dir, w.terminal); err != nil {
+			w.showShellError(err)
+		}
 	}
 }
 
 func (w *appWindow) openCurrentFileManager(ctx context.Context) {
 	if dir, ok := w.currentTabDir(); ok {
-		openFileManager(ctx, dir, w.fileManager)
+		if err := openFileManager(ctx, dir, w.fileManager); err != nil {
+			w.showShellError(err)
+		}
 	}
 }
 
 func (w *appWindow) openCurrentEditor(ctx context.Context) {
 	if dir, ok := w.currentTabDir(); ok {
-		openEditor(ctx, dir, w.editor)
+		if err := openEditor(ctx, dir, w.editor); err != nil {
+			w.showShellError(err)
+		}
 	}
+}
+
+func (w *appWindow) showShellError(err error) {
+	dialog := newAlertDialog("Shell operation failed")
+
+	dialog.SetDetail(err.Error())
+	dialog.Show(&w.win.Window)
 }
 
 func (w *appWindow) currentTabDir() (string, bool) {
@@ -457,7 +470,9 @@ func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popo
 	openTerm.ConnectClicked(func() {
 		popover.Popdown()
 
-		openTerminal(ctx, w.configDir, w.terminal)
+		if err := openTerminal(ctx, w.configDir, w.terminal); err != nil {
+			w.showShellError(err)
+		}
 	})
 
 	openFiles := menuItem("system-file-manager", "Open Files Here")
@@ -465,7 +480,9 @@ func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popo
 	openFiles.ConnectClicked(func() {
 		popover.Popdown()
 
-		openFileManager(ctx, w.configDir, w.fileManager)
+		if err := openFileManager(ctx, w.configDir, w.fileManager); err != nil {
+			w.showShellError(err)
+		}
 	})
 
 	openEditorBtn := menuItem("accessories-text-editor", "Open Editor Here")
@@ -473,7 +490,9 @@ func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popo
 	openEditorBtn.ConnectClicked(func() {
 		popover.Popdown()
 
-		openEditor(ctx, w.configDir, w.editor)
+		if err := openEditor(ctx, w.configDir, w.editor); err != nil {
+			w.showShellError(err)
+		}
 	})
 
 	return []*gtk.Button{openTerm, openFiles, openEditorBtn}
