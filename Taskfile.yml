@@ -8,6 +8,7 @@ tasks:
         sh: git tag -l | head -1 2>/dev/null || echo "dev"
     cmds:
       - go build -ldflags "-X github.com/abunjevac/devtabs/internal/version.Version={{.VERSION}}" -o devtabs ./cmd/devtabs
+      - upx -6 devtabs
 
   run:
     desc: Build and run with ./devtabs.yaml
