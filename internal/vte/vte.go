@@ -131,7 +131,7 @@ func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb Sp
 
 	if workingDir != "" {
 		cwd = C.CString(workingDir)
-		defer C.free(unsafe.Pointer(cwd)) //nolint:nlreturn // wtf?
+		defer C.free(unsafe.Pointer(cwd)) //nolint:nlreturn // probably false positive
 	}
 
 	C.vteSpawnAsync(t.ptr, cwd, &argv[0], C.int(id))
@@ -149,7 +149,7 @@ func SetFont(t *Terminal, family string, size float64) {
 	desc := fmt.Sprintf("%s %g", family, size)
 
 	cs := C.CString(desc)
-	defer C.free(unsafe.Pointer(cs)) //nolint:nlreturn // wtf?
+	defer C.free(unsafe.Pointer(cs)) //nolint:nlreturn // probably false positive
 
 	C.vteSetFont(t.ptr, cs)
 }
@@ -161,7 +161,7 @@ func FeedChild(t *Terminal, data string) {
 	}
 
 	cs := C.CString(data)
-	defer C.free(unsafe.Pointer(cs)) //nolint:nlreturn // wtf?
+	defer C.free(unsafe.Pointer(cs)) //nolint:nlreturn // probably false positive
 
 	C.vteFeedChild(t.ptr, cs, C.int(len(data)))
 }
