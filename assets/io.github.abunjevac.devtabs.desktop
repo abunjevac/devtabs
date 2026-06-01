@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=devtabs
+Comment=Terminal tab launcher from YAML config
+Exec=devtabs
+Icon=io.github.abunjevac.devtabs
+StartupWMClass=devtabs
+Terminal=false
+Categories=Development;Utility;

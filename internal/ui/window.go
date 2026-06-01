@@ -6,11 +6,16 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/abunjevac/devtabs/assets"
 	"github.com/abunjevac/devtabs/internal/config"
+	"github.com/abunjevac/devtabs/internal/version"
 	"github.com/abunjevac/devtabs/internal/vte"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
+	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
+
+const appIconName = "io.github.abunjevac.devtabs"
 
 type toolbarButtons struct {
 	run, stop *gtk.Button
@@ -45,7 +50,8 @@ func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, co
 
 	w.win.SetTitle(cfg.Title)
 	w.win.SetDefaultSize(cfg.WindowWidth, cfg.WindowHeight)
-	w.win.SetIconName("utilities-terminal")
+
+	w.win.SetIconName(appIconName)
 
 	w.notebook = gtk.NewNotebook()
 
@@ -431,6 +437,13 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 		restartProcess(ctx)
 	})
 
+	aboutBtn := menuItem("help-about", "About")
+
+	aboutBtn.ConnectClicked(func() {
+		popover.Popdown()
+		w.showAbout()
+	})
+
 	quitBtn := menuItem("application-exit", "Quit")
 
 	quitBtn.ConnectClicked(func() {
@@ -451,6 +464,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 
 	popoverBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
 	popoverBox.Append(restartBtn)
+	popoverBox.Append(aboutBtn)
 	popoverBox.Append(quitBtn)
 
 	popover.SetChild(popoverBox)
@@ -462,6 +476,29 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	menuBtn.SetFocusOnClick(false)
 
 	return menuBtn
+}
+
+func (w *appWindow) showAbout() {
+	dialog := gtk.NewAboutDialog()
+
+	dialog.SetTransientFor(&w.win.Window)
+	dialog.SetModal(true)
+	dialog.SetProgramName("devtabs")
+	dialog.SetVersion(version.Version)
+	dialog.SetComments("Terminal tab launcher from YAML config")
+	dialog.SetCopyright("Copyright 2026 Alan Bunjevac")
+	dialog.SetLicenseType(gtk.LicenseMITX11)
+	dialog.SetWebsite("https://github.com/abunjevac/devtabs")
+	dialog.SetWebsiteLabel("github.com/abunjevac/devtabs")
+
+	logo, err := gdk.NewTextureFromBytes(glib.NewBytes(assets.IconPNG))
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "devtabs: load about logo: %v\n", err)
+	} else {
+		dialog.SetLogo(logo)
+	}
+
+	dialog.Present()
 }
 
 func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popover) []*gtk.Button {

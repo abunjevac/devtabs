@@ -42,6 +42,23 @@ tasks:
     cmds:
       - go install .
 
+  install-desktop:
+    desc: Install desktop launcher and app icon for the current user
+    cmds:
+      - mkdir -p ~/.local/share/icons/hicolor/512x512/apps ~/.local/share/applications
+      - cp assets/io.github.abunjevac.devtabs.png ~/.local/share/icons/hicolor/512x512/apps/io.github.abunjevac.devtabs.png
+      - cp assets/io.github.abunjevac.devtabs.desktop ~/.local/share/applications/io.github.abunjevac.devtabs.desktop
+      - update-desktop-database ~/.local/share/applications
+      - gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor
+
+  uninstall-desktop:
+    desc: Remove desktop launcher and app icon for the current user
+    cmds:
+      - rm -f ~/.local/share/icons/hicolor/512x512/apps/io.github.abunjevac.devtabs.png
+      - rm -f ~/.local/share/applications/io.github.abunjevac.devtabs.desktop
+      - update-desktop-database ~/.local/share/applications
+      - gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor
+
   tidy:
     desc: Tidy Go modules
     cmds:

@@ -64,6 +64,35 @@ task build          # requires Task — https://taskfile.dev
 # or: go build -o devtabs ./cmd/devtabs
 ```
 
+### Desktop launcher and icon
+
+Linux desktop shells resolve application icons through desktop integration metadata, not directly from a running GTK4
+binary. The application window advertises the icon name `io.github.abunjevac.devtabs`, while the desktop shell looks up
+that name in the icon theme and associates the window with a `.desktop` entry. Without those files, the shell may show a
+generic terminal or GTK application icon even though devtabs has its own embedded artwork for the About dialog.
+
+Install the user-local desktop launcher and icon after installing or building the binary:
+
+```bash
+task install-desktop
+```
+
+This installs:
+
+| File | Destination |
+|------|-------------|
+| Desktop entry | `~/.local/share/applications/io.github.abunjevac.devtabs.desktop` |
+| Transparent 512px icon | `~/.local/share/icons/hicolor/512x512/apps/io.github.abunjevac.devtabs.png` |
+
+The task also refreshes the desktop application database and icon cache. Close and relaunch devtabs after installation so
+the desktop shell can associate the new window with the launcher entry.
+
+To remove the desktop integration files and refresh the caches:
+
+```bash
+task uninstall-desktop
+```
+
 ---
 
 ## Usage
