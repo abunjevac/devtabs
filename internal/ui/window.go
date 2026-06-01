@@ -23,16 +23,22 @@ type appWindow struct {
 	tabs     []*tab
 	buttons  toolbarButtons
 
-	fontFamily string
-	fontSize   float64
-	configDir  string
+	fontFamily  string
+	fontSize    float64
+	configDir   string
+	terminal    string
+	fileManager string
+	editor      string
 }
 
 func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, configDir string) *gtk.ApplicationWindow {
 	w := &appWindow{
-		fontFamily: cfg.Font,
-		fontSize:   cfg.FontSize,
-		configDir:  configDir,
+		fontFamily:  cfg.Font,
+		fontSize:    cfg.FontSize,
+		configDir:   configDir,
+		terminal:    cfg.Terminal,
+		fileManager: cfg.FileManager,
+		editor:      cfg.Editor,
 	}
 
 	w.win = gtk.NewApplicationWindow(app)
@@ -57,7 +63,7 @@ func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, co
 	vbox.Append(w.notebook)
 	w.win.SetChild(vbox)
 
-	w.connectCallbacks(cfg)
+	w.connectCallbacks(ctx, cfg)
 
 	return w.win
 }
@@ -104,8 +110,9 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	minus := shortcutButton("zoom-out", "Font −", "ctrl+-")
 	plus := shortcutButton("zoom-in", "Font +", "ctrl++")
 
-	minus.SetFocusOnClick(false)
-	plus.SetFocusOnClick(false)
+	for _, b := range []*gtk.Button{minus, plus} {
+		b.SetFocusOnClick(false)
+	}
 
 	minus.ConnectClicked(w.decreaseFont)
 	plus.ConnectClicked(w.increaseFont)
@@ -131,13 +138,37 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	box.Append(gtk.NewSeparator(gtk.OrientationVertical))
 	box.Append(minus)
 	box.Append(plus)
+	box.Append(gtk.NewSeparator(gtk.OrientationVertical))
+	box.Append(w.buildDirButtons(ctx))
 	box.Append(spacer)
 	box.Append(menuBtn)
 
 	return box
 }
 
-func (w *appWindow) connectCallbacks(cfg *config.Config) { //nolint:cyclop
+func (w *appWindow) buildDirButtons(ctx context.Context) *gtk.Box {
+	openTerm := shortcutButton("utilities-terminal", "Terminal", "alt+t")
+	openFiles := shortcutButton("system-file-manager", "Files", "alt+f")
+	openEdit := shortcutButton("accessories-text-editor", "Editor", "alt+e")
+
+	for _, b := range []*gtk.Button{openTerm, openFiles, openEdit} {
+		b.SetFocusOnClick(false)
+	}
+
+	openTerm.ConnectClicked(func() { w.openCurrentTerminal(ctx) })
+	openFiles.ConnectClicked(func() { w.openCurrentFileManager(ctx) })
+	openEdit.ConnectClicked(func() { w.openCurrentEditor(ctx) })
+
+	box := gtk.NewBox(gtk.OrientationHorizontal, 4)
+
+	box.Append(openTerm)
+	box.Append(openFiles)
+	box.Append(openEdit)
+
+	return box
+}
+
+func (w *appWindow) connectCallbacks(ctx context.Context, cfg *config.Config) { //nolint:cyclop
 	for _, t := range w.tabs {
 		t.onStateChange = func(_ tabState) {
 			idx := w.notebook.CurrentPage()
@@ -184,18 +215,21 @@ func (w *appWindow) connectCallbacks(cfg *config.Config) { //nolint:cyclop
 		}
 	})
 
-	w.installKeyController()
+	w.installKeyController(ctx)
 }
 
-func (w *appWindow) installKeyController() {
+func (w *appWindow) installKeyController(ctx context.Context) {
 	keyCtrl := gtk.NewEventControllerKey()
 
 	keyCtrl.SetPropagationPhase(gtk.PhaseCapture)
 	w.win.AddController(keyCtrl)
-	keyCtrl.ConnectKeyPressed(w.onKeyPressed)
+
+	keyCtrl.ConnectKeyPressed(func(key, keycode uint, state gdk.ModifierType) bool {
+		return w.onKeyPressed(ctx, key, keycode, state)
+	})
 }
 
-func (w *appWindow) onKeyPressed(key, _ uint, state gdk.ModifierType) bool { //nolint:cyclop
+func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.ModifierType) bool { //nolint:cyclop
 	altPressed := state&gdk.AltMask != 0
 	ctrlPressed := state&gdk.ControlMask != 0
 
@@ -220,6 +254,15 @@ func (w *appWindow) onKeyPressed(key, _ uint, state gdk.ModifierType) bool { //n
 
 	case altPressed && key == uint('x'):
 		w.stopAll()
+
+	case altPressed && key == uint('t'):
+		w.openCurrentTerminal(ctx)
+
+	case altPressed && key == uint('f'):
+		w.openCurrentFileManager(ctx)
+
+	case altPressed && key == uint('e'):
+		w.openCurrentEditor(ctx)
 
 	case ctrlPressed && (key == gdk.KEY_plus || key == gdk.KEY_equal || key == gdk.KEY_KP_Add):
 		w.increaseFont()
@@ -291,6 +334,34 @@ func (w *appWindow) applyFont() {
 	}
 }
 
+func (w *appWindow) openCurrentTerminal(ctx context.Context) {
+	if dir, ok := w.currentTabDir(); ok {
+		openTerminal(ctx, dir, w.terminal)
+	}
+}
+
+func (w *appWindow) openCurrentFileManager(ctx context.Context) {
+	if dir, ok := w.currentTabDir(); ok {
+		openFileManager(ctx, dir, w.fileManager)
+	}
+}
+
+func (w *appWindow) openCurrentEditor(ctx context.Context) {
+	if dir, ok := w.currentTabDir(); ok {
+		openEditor(ctx, dir, w.editor)
+	}
+}
+
+func (w *appWindow) currentTabDir() (string, bool) {
+	idx := w.notebook.CurrentPage()
+
+	if idx < 0 || idx >= len(w.tabs) {
+		return "", false
+	}
+
+	return w.tabs[idx].cfg.WorkingDir, true
+}
+
 func (w *appWindow) updateButtonSensitivity(idx int) {
 	if idx < 0 || idx >= len(w.tabs) {
 		w.buttons.run.SetSensitive(false)
@@ -333,21 +404,7 @@ func restartProcess(ctx context.Context) {
 func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	popover := gtk.NewPopover()
 
-	openTermBtn := menuItem("utilities-terminal", "Open Terminal Here")
-
-	openTermBtn.ConnectClicked(func() { //nolint:contextcheck
-		popover.Popdown()
-
-		openTerminal(w.configDir)
-	})
-
-	openFilesBtn := menuItem("system-file-manager", "Open Files Here")
-
-	openFilesBtn.ConnectClicked(func() { //nolint:contextcheck
-		popover.Popdown()
-
-		openFileManager(w.configDir)
-	})
+	openDirItems := w.buildOpenDirMenuItems(ctx, popover)
 
 	restartBtn := menuItem("view-refresh", "Restart")
 
@@ -374,8 +431,11 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	popoverBox.SetMarginBottom(4)
 	popoverBox.SetMarginStart(4)
 	popoverBox.SetMarginEnd(4)
-	popoverBox.Append(openTermBtn)
-	popoverBox.Append(openFilesBtn)
+
+	for _, item := range openDirItems {
+		popoverBox.Append(item)
+	}
+
 	popoverBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
 	popoverBox.Append(restartBtn)
 	popoverBox.Append(quitBtn)
@@ -389,6 +449,34 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	menuBtn.SetFocusOnClick(false)
 
 	return menuBtn
+}
+
+func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popover) []*gtk.Button {
+	openTerm := menuItem("utilities-terminal", "Open Terminal Here")
+
+	openTerm.ConnectClicked(func() {
+		popover.Popdown()
+
+		openTerminal(ctx, w.configDir, w.terminal)
+	})
+
+	openFiles := menuItem("system-file-manager", "Open Files Here")
+
+	openFiles.ConnectClicked(func() {
+		popover.Popdown()
+
+		openFileManager(ctx, w.configDir, w.fileManager)
+	})
+
+	openEditorBtn := menuItem("accessories-text-editor", "Open Editor Here")
+
+	openEditorBtn.ConnectClicked(func() {
+		popover.Popdown()
+
+		openEditor(ctx, w.configDir, w.editor)
+	})
+
+	return []*gtk.Button{openTerm, openFiles, openEditorBtn}
 }
 
 // menuItem creates a frameless, left-aligned button with an icon and label for use in a popover menu.

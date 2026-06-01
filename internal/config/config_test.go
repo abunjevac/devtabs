@@ -48,6 +48,24 @@ func TestProfiles(t *testing.T) {
 	})
 }
 
+func TestApplicationDefaults(t *testing.T) {
+	cfg, err := config.LoadFromString("tabs:\n  - name: a\n    command: x\n")
+	require.NoError(t, err)
+
+	assert.Empty(t, cfg.Terminal)
+	assert.Empty(t, cfg.FileManager)
+	assert.Equal(t, "zed", cfg.Editor)
+}
+
+func TestApplicationOverrides(t *testing.T) {
+	cfg, err := config.LoadFromString("terminal: kitty\nfile_manager: nautilus\neditor: code\ntabs:\n  - name: a\n    command: x\n")
+	require.NoError(t, err)
+
+	assert.Equal(t, "kitty", cfg.Terminal)
+	assert.Equal(t, "nautilus", cfg.FileManager)
+	assert.Equal(t, "code", cfg.Editor)
+}
+
 func TestFilterByProfiles(t *testing.T) {
 	base := func() *config.Config {
 		cfg, err := config.LoadFromString(`tabs:

@@ -5,7 +5,13 @@ import (
 	"os/exec"
 )
 
-func openTerminal(dir string) {
+func openTerminal(ctx context.Context, dir, terminal string) {
+	if terminal != "" {
+		startInDir(ctx, terminal, dir)
+
+		return
+	}
+
 	type entry struct {
 		bin  string
 		args []string
@@ -24,12 +30,30 @@ func openTerminal(dir string) {
 			continue
 		}
 
-		_ = exec.CommandContext(context.Background(), path, c.args...).Start()
+		_ = exec.CommandContext(ctx, path, c.args...).Start()
 
 		return
 	}
 }
 
-func openFileManager(dir string) {
-	_ = exec.CommandContext(context.Background(), "xdg-open", dir).Start()
+func openFileManager(ctx context.Context, dir, fileManager string) {
+	if fileManager == "" {
+		_ = exec.CommandContext(ctx, "xdg-open", dir).Start()
+
+		return
+	}
+
+	startInDir(ctx, fileManager, dir, ".")
+}
+
+func openEditor(ctx context.Context, dir, editor string) {
+	startInDir(ctx, editor, dir, ".")
+}
+
+func startInDir(ctx context.Context, name, dir string, args ...string) {
+	cmd := exec.CommandContext(ctx, name, args...)
+
+	cmd.Dir = dir
+
+	_ = cmd.Start()
 }

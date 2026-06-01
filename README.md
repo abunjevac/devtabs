@@ -22,7 +22,7 @@ Built with GTK4 and VTE.
 - **Font scaling** — `Ctrl++` / `Ctrl+-` to adjust terminal font size at runtime
 - **Startup tab** — configure which tab receives focus on launch
 - **Profile filtering** — tag tabs with profiles and pass `--profile work,dev` to show only matching tabs
-- **Hamburger menu** — open a terminal or file manager in the config file's directory, or restart
+- **Directory actions** — open a terminal, file manager, or editor in the config file's directory or the current tab's directory
 - **Keyboard shortcuts** — `Alt+1`–`9` to switch tabs, `Alt+R/S/A/X` for run/stop, `Ctrl+Q` to quit
 - **Version in titlebar** — shows the release version at a glance
 
@@ -98,6 +98,9 @@ font: "Monospace"          # terminal font family (default: Monospace)
 font_size: 13              # points (default: 12)
 window_width: 1400         # pixels (default: 1200)
 window_height: 900         # pixels (default: 800)
+terminal: kitty            # optional terminal executable
+file_manager: nautilus     # optional file manager executable
+editor: zed                # editor executable (default: zed)
 
 tabs:
   - name: server
@@ -153,9 +156,16 @@ tabs:
 | `Alt+S`           | Stop (Ctrl+C) current tab  |
 | `Alt+A`           | Run all idle tabs          |
 | `Alt+X`           | Stop all running tabs      |
+| `Alt+T`           | Open terminal in current tab directory |
+| `Alt+D`           | Open file manager in current tab directory |
+| `Alt+E`           | Open editor in current tab directory |
 | `Ctrl++`          | Increase font size         |
 | `Ctrl+-`          | Decrease font size         |
 | `Ctrl+Q`          | Quit                       |
+
+## Toolbar directory actions
+
+The toolbar buttons open a terminal, file manager, or editor in the current tab's `working_dir`.
 
 ## Toolbar menu
 
@@ -165,9 +175,11 @@ The `☰` button on the right side of the toolbar opens a menu with:
 |--------------------|---------------------------------------------------------------------|
 | Open Terminal Here | Opens a new terminal in the directory containing the config file    |
 | Open Files Here    | Opens the file manager in the directory containing the config file  |
+| Open Editor Here   | Opens the configured editor in the directory containing the config file |
 | Restart            | Closes all terminals and relaunches devtabs with the same arguments |
 
-Supported terminal emulators (tried in order): `x-terminal-emulator`, `gnome-terminal`, `xfce4-terminal`, `konsole`.
+When `terminal` is omitted, supported terminal emulators are tried in order: `x-terminal-emulator`, `gnome-terminal`,
+`xfce4-terminal`, `konsole`. When `file_manager` is omitted, `xdg-open` is used.
 
 ---
 

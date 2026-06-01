@@ -4,6 +4,8 @@ font_size: 14
 window_width: 1400
 window_height: 1000
 title: DevTabs
+editor: zed
+file_manager: caja
 
 tabs:
   - name: apt update

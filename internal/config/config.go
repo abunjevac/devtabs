@@ -32,6 +32,9 @@ type Config struct {
 	WindowWidth  int         `yaml:"window_width"`
 	WindowHeight int         `yaml:"window_height"`
 	Title        string      `yaml:"title"`
+	Terminal     string      `yaml:"terminal"`
+	FileManager  string      `yaml:"file_manager"`
+	Editor       string      `yaml:"editor"`
 	Tabs         []TabConfig `yaml:"tabs"`
 }
 
@@ -84,6 +87,7 @@ func applyDefaults(cfg *Config, root string) {
 	cfg.FontSize = cmp.Or(cfg.FontSize, 12)
 	cfg.WindowWidth = cmp.Or(cfg.WindowWidth, 1200)
 	cfg.WindowHeight = cmp.Or(cfg.WindowHeight, 800)
+	cfg.Editor = cmp.Or(cfg.Editor, "zed")
 	cfg.Title = cmp.Or(cfg.Title, "devtabs "+version.Version)
 
 	for i := range cfg.Tabs {
