@@ -11,11 +11,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/abunjevac/devtabs/internal/config"
-	"github.com/abunjevac/devtabs/internal/vte"
 	"github.com/diamondburned/gotk4/pkg/cairo"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+
+	"github.com/abunjevac/devtabs/internal/config"
+	"github.com/abunjevac/devtabs/internal/vte"
 )
 
 type tabState int
@@ -137,6 +138,7 @@ func (t *tab) getState() tabState {
 // Must be called from the GTK main thread.
 func (t *tab) runCommand() {
 	t.setState(stateRunning)
+
 	vte.FeedChild(t.terminal, t.cfg.Command+"\n")
 }
 

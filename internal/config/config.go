@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/abunjevac/devtabs/internal/version"
 	"gopkg.in/yaml.v3"
+
+	"github.com/abunjevac/devtabs/internal/version"
 )
 
 // TabConfig holds the configuration for a single tab.

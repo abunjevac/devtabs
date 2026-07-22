@@ -60,8 +60,10 @@ func goVteSpawnDone(callbackID C.int, pid C.int, ptyFd C.int, errMsg *C.char) {
 	id := int(callbackID)
 
 	spawnMu.Lock()
+
 	cb, ok := spawnRegistry[id]
 	delete(spawnRegistry, id)
+
 	spawnMu.Unlock()
 
 	if !ok {

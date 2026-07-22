@@ -6,13 +6,14 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/diamondburned/gotk4/pkg/gdk/v4"
+	"github.com/diamondburned/gotk4/pkg/glib/v2"
+	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+
 	"github.com/abunjevac/devtabs/assets"
 	"github.com/abunjevac/devtabs/internal/config"
 	"github.com/abunjevac/devtabs/internal/version"
 	"github.com/abunjevac/devtabs/internal/vte"
-	"github.com/diamondburned/gotk4/pkg/gdk/v4"
-	"github.com/diamondburned/gotk4/pkg/glib/v2"
-	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 const appIconName = "io.github.abunjevac.devtabs"
@@ -69,6 +70,7 @@ func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, co
 
 	vbox.Append(toolbar)
 	vbox.Append(w.notebook)
+
 	w.win.SetChild(vbox)
 
 	w.connectCallbacks(ctx, cfg)
@@ -123,6 +125,7 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	}
 
 	minus.ConnectClicked(w.decreaseFont)
+
 	plus.ConnectClicked(w.increaseFont)
 
 	w.buttons = toolbarButtons{run: run, stop: stop}
@@ -230,6 +233,7 @@ func (w *appWindow) installKeyController(ctx context.Context) {
 	keyCtrl := gtk.NewEventControllerKey()
 
 	keyCtrl.SetPropagationPhase(gtk.PhaseCapture)
+
 	w.win.AddController(keyCtrl)
 
 	keyCtrl.ConnectKeyPressed(func(key, keycode uint, state gdk.ModifierType) bool {
@@ -459,6 +463,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 
 	aboutBtn.ConnectClicked(func() {
 		popover.Popdown()
+
 		w.showAbout()
 	})
 
@@ -466,6 +471,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 
 	quitBtn.ConnectClicked(func() {
 		popover.Popdown()
+
 		w.win.Close()
 	})
 

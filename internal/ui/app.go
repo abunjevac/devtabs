@@ -4,9 +4,10 @@ import (
 	"context"
 	"os"
 
-	"github.com/abunjevac/devtabs/internal/config"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+
+	"github.com/abunjevac/devtabs/internal/config"
 )
 
 // Run starts the GTK application. Blocks until the window is closed.
