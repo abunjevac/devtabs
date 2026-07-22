@@ -28,22 +28,24 @@ type appWindow struct {
 	tabs     []*tab
 	buttons  toolbarButtons
 
-	fontFamily  string
-	fontSize    float64
-	configDir   string
-	terminal    string
-	fileManager string
-	editor      string
+	fontFamily        string
+	fontSize          float64
+	configDir         string
+	terminal          string
+	fileManager       string
+	editor            string
+	wrapTabNavigation bool
 }
 
 func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, configDir string) *gtk.ApplicationWindow {
 	w := &appWindow{
-		fontFamily:  cfg.Font,
-		fontSize:    cfg.FontSize,
-		configDir:   configDir,
-		terminal:    cfg.Terminal,
-		fileManager: cfg.FileManager,
-		editor:      cfg.Editor,
+		fontFamily:        cfg.Font,
+		fontSize:          cfg.FontSize,
+		configDir:         configDir,
+		terminal:          cfg.Terminal,
+		fileManager:       cfg.FileManager,
+		editor:            cfg.Editor,
+		wrapTabNavigation: cfg.WrapTabNavigation,
 	}
 
 	w.win = gtk.NewApplicationWindow(app)
@@ -235,7 +237,7 @@ func (w *appWindow) installKeyController(ctx context.Context) {
 	})
 }
 
-func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.ModifierType) bool { //nolint:cyclop
+func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.ModifierType) bool { //nolint:cyclop,gocyclo // keyboard action dispatch is intentionally a flat shortcut map
 	altPressed := state&gdk.AltMask != 0
 	ctrlPressed := state&gdk.ControlMask != 0
 
@@ -248,6 +250,12 @@ func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.Mod
 
 			return true
 		}
+
+	case altPressed && key == gdk.KEY_Left:
+		w.selectAdjacentTab(-1)
+
+	case altPressed && key == gdk.KEY_Right:
+		w.selectAdjacentTab(1)
 
 	case altPressed && key == uint('s'):
 		w.stopCurrent()
@@ -284,6 +292,16 @@ func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.Mod
 	}
 
 	return true
+}
+
+func (w *appWindow) selectAdjacentTab(delta int) {
+	idx := w.notebook.CurrentPage()
+
+	next := adjacentTabIndex(idx, delta, len(w.tabs), w.wrapTabNavigation)
+
+	if next != idx {
+		w.notebook.SetCurrentPage(next)
+	}
 }
 
 func (w *appWindow) runCurrent() {

@@ -23,7 +23,7 @@ Built with GTK4 and VTE.
 - **Startup tab** — configure which tab receives focus on launch
 - **Profile filtering** — tag tabs with profiles and pass `--profile work,dev` to show only matching tabs
 - **Directory actions** — open a terminal, file manager, or editor in the config file's directory or the current tab's directory
-- **Keyboard shortcuts** — `Alt+1`–`9` to switch tabs, `Alt+R/S/A/X` for run/stop, `Ctrl+Q` to quit
+- **Keyboard shortcuts** — `Alt+1`–`9` to switch tabs; `Alt+Left`/`Alt+Right` to navigate; `Alt+R/S/A/X` for run/stop; `Ctrl+Q` to quit
 - **Version in titlebar** — shows the release version at a glance
 
 ---
@@ -122,6 +122,7 @@ devtabs --version
 Create a `devtabs.yaml` file. Only `tabs` is required; everything else is optional.
 
 ```yaml
+wrap_tab_navigation: true  # optional; cycle from the first/last tab (default: false)
 startup_tab: server        # focus this tab on launch (must match a tab name)
 font: "Monospace"          # terminal font family (default: Monospace)
 font_size: 13              # points (default: 12)
@@ -174,13 +175,18 @@ tabs:
 
 `run_on_startup` accepts `true`/`false`, `yes`/`no`, `on`/`off`, or `1`/`0`.
 
+`wrap_tab_navigation` defaults to `false`. Set it to `true` to cycle from the first tab to the last, and from the last tab to the first, with `Alt+Left` and `Alt+Right`.
+
 ---
+
 
 ## Keyboard shortcuts
 
 | Shortcut          | Action                     |
 |-------------------|----------------------------|
 | `Alt+1` – `Alt+9` | Switch to tab N            |
+| `Alt+Left`        | Select the previous tab    |
+| `Alt+Right`       | Select the next tab        |
 | `Alt+R`           | Run command in current tab |
 | `Alt+S`           | Stop (Ctrl+C) current tab  |
 | `Alt+A`           | Run all idle tabs          |

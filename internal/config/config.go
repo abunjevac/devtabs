@@ -26,16 +26,17 @@ type TabConfig struct {
 
 // Config is the top-level configuration.
 type Config struct {
-	StartupTab   string      `yaml:"startup_tab"`
-	Font         string      `yaml:"font"`
-	FontSize     float64     `yaml:"font_size"`
-	WindowWidth  int         `yaml:"window_width"`
-	WindowHeight int         `yaml:"window_height"`
-	Title        string      `yaml:"title"`
-	Terminal     string      `yaml:"terminal"`
-	FileManager  string      `yaml:"file_manager"`
-	Editor       string      `yaml:"editor"`
-	Tabs         []TabConfig `yaml:"tabs"`
+	StartupTab        string      `yaml:"startup_tab"`
+	WrapTabNavigation bool        `yaml:"wrap_tab_navigation"`
+	Font              string      `yaml:"font"`
+	FontSize          float64     `yaml:"font_size"`
+	WindowWidth       int         `yaml:"window_width"`
+	WindowHeight      int         `yaml:"window_height"`
+	Title             string      `yaml:"title"`
+	Terminal          string      `yaml:"terminal"`
+	FileManager       string      `yaml:"file_manager"`
+	Editor            string      `yaml:"editor"`
+	Tabs              []TabConfig `yaml:"tabs"`
 }
 
 // Load reads and validates a config file from the given path.

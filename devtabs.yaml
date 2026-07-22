@@ -1,11 +1,12 @@
 startup_tab: go version
 font: "Google Sans Code"
 font_size: 14
+wrap_tab_navigation: true
 window_width: 1400
 window_height: 1000
 title: DevTabs
 editor: zed .
-file_manager: caja
+file_manager: dolphin
 
 tabs:
   - name: apt update
