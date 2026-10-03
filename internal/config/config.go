@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,32 +16,32 @@ import (
 
 // TabConfig holds the configuration for a single tab.
 type TabConfig struct {
-	Name            string   `yaml:"name"`
-	Command         string   `yaml:"command"`
-	AltCommand      string   `yaml:"alt_command"`
-	WorkingDir      string   `yaml:"working_dir"`
-	RunOnStartup    Bool     `yaml:"run_on_startup"`
-	StartupDelay    Duration `yaml:"startup_delay"`
-	Shell           string   `yaml:"shell"`
-	ShellArgs       []string `yaml:"shell_args"`
-	Profiles        []string `yaml:"profiles"`
-	ScrollbackLines int      `yaml:"scrollback_lines"`
+	Name            string   `yaml:"name,omitempty"`
+	Command         string   `yaml:"command,omitempty"`
+	AltCommand      string   `yaml:"alt_command,omitempty"`
+	WorkingDir      string   `yaml:"working_dir,omitempty"`
+	RunOnStartup    Bool     `yaml:"run_on_startup,omitempty"`
+	StartupDelay    Duration `yaml:"startup_delay,omitempty"`
+	Shell           string   `yaml:"shell,omitempty"`
+	ShellArgs       []string `yaml:"shell_args,omitempty"`
+	Profiles        []string `yaml:"profiles,omitempty"`
+	ScrollbackLines int      `yaml:"scrollback_lines,omitempty"`
 }
 
 // Config is the top-level configuration.
 type Config struct {
-	StartupTab        string      `yaml:"startup_tab"`
-	WrapTabNavigation bool        `yaml:"wrap_tab_navigation"`
-	ScrollbackLines   int         `yaml:"scrollback_lines"`
-	Font              string      `yaml:"font"`
-	FontSize          float64     `yaml:"font_size"`
-	WindowWidth       int         `yaml:"window_width"`
-	WindowHeight      int         `yaml:"window_height"`
-	Title             string      `yaml:"title"`
-	Terminal          string      `yaml:"terminal"`
-	FileManager       string      `yaml:"file_manager"`
-	Editor            string      `yaml:"editor"`
-	Tabs              []TabConfig `yaml:"tabs"`
+	StartupTab        string      `yaml:"startup_tab,omitempty"`
+	WrapTabNavigation bool        `yaml:"wrap_tab_navigation,omitempty"`
+	ScrollbackLines   int         `yaml:"scrollback_lines,omitempty"`
+	Font              string      `yaml:"font,omitempty"`
+	FontSize          float64     `yaml:"font_size,omitempty"`
+	WindowWidth       int         `yaml:"window_width,omitempty"`
+	WindowHeight      int         `yaml:"window_height,omitempty"`
+	Title             string      `yaml:"title,omitempty"`
+	Terminal          string      `yaml:"terminal,omitempty"`
+	FileManager       string      `yaml:"file_manager,omitempty"`
+	Editor            string      `yaml:"editor,omitempty"`
+	Tabs              []TabConfig `yaml:"tabs,omitempty"`
 }
 
 // Load reads and validates a config file from the given path.
@@ -68,21 +69,32 @@ func Load(path, root string) (*Config, error) {
 // LoadFromString parses and validates config from a string.
 // working_dir paths are not resolved; call Load for full validation.
 func LoadFromString(data string) (*Config, error) {
+	cfg, err := Decode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := Validate(cfg); err != nil {
+		return nil, err
+	}
+
+	applyDefaults(cfg, "")
+
+	return cfg, nil
+}
+
+// Decode parses config from a string without validating it or applying defaults,
+// so the result reflects exactly what the file contains.
+func Decode(data string) (*Config, error) {
 	var cfg Config
 
 	dec := yaml.NewDecoder(strings.NewReader(data))
 
 	dec.KnownFields(true)
 
-	if err := dec.Decode(&cfg); err != nil {
+	if err := dec.Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("parse-config: %w", err)
 	}
-
-	if err := validate(&cfg); err != nil {
-		return nil, err
-	}
-
-	applyDefaults(&cfg, "")
 
 	return &cfg, nil
 }
@@ -114,32 +126,54 @@ func applyDefaults(cfg *Config, root string) {
 	}
 }
 
-func validate(cfg *Config) error {
+// FieldError reports a validation failure for a single config field.
+type FieldError struct {
+	// index into Config.Tabs, or -1 for a top-level field
+	Tab   int
+	Field string
+	Msg   string
+}
+
+func (e *FieldError) Error() string {
+	return e.Msg
+}
+
+func globalErr(field, format string, args ...any) *FieldError {
+	return &FieldError{Tab: -1, Field: field, Msg: fmt.Sprintf(format, args...)}
+}
+
+func tabErr(tab int, field, format string, args ...any) *FieldError {
+	return &FieldError{Tab: tab, Field: field, Msg: fmt.Sprintf(format, args...)}
+}
+
+// Validate checks cfg for errors that do not depend on the filesystem.
+// It returns a *FieldError describing the first problem found.
+func Validate(cfg *Config) error {
 	if len(cfg.Tabs) == 0 {
-		return errors.New("config must define at least one tab")
+		return globalErr("tabs", "config must define at least one tab")
 	}
 
 	if cfg.ScrollbackLines < -1 {
-		return fmt.Errorf("scrollback_lines %d: must be -1 (unlimited) or greater", cfg.ScrollbackLines)
+		return globalErr("scrollback_lines", "scrollback_lines %d: must be -1 (unlimited) or greater", cfg.ScrollbackLines)
 	}
 
 	names := make(map[string]struct{}, len(cfg.Tabs))
 
 	for i, tab := range cfg.Tabs {
 		if tab.Name == "" {
-			return fmt.Errorf("tab[%d]: name is required", i)
+			return tabErr(i, "name", "tab[%d]: name is required", i)
 		}
 
 		if tab.Command == "" {
-			return fmt.Errorf("tab %q: command is required", tab.Name)
+			return tabErr(i, "command", "tab %q: command is required", tab.Name)
 		}
 
 		if tab.ScrollbackLines < -1 {
-			return fmt.Errorf("tab %q: scrollback_lines %d: must be -1 (unlimited) or greater", tab.Name, tab.ScrollbackLines)
+			return tabErr(i, "scrollback_lines", "tab %q: scrollback_lines %d: must be -1 (unlimited) or greater", tab.Name, tab.ScrollbackLines)
 		}
 
 		if _, dup := names[tab.Name]; dup {
-			return fmt.Errorf("duplicate tab name: %q", tab.Name)
+			return tabErr(i, "name", "duplicate tab name: %q", tab.Name)
 		}
 
 		names[tab.Name] = struct{}{}
@@ -147,7 +181,7 @@ func validate(cfg *Config) error {
 
 	if cfg.StartupTab != "" {
 		if _, ok := names[cfg.StartupTab]; !ok {
-			return fmt.Errorf("startup_tab %q does not match any tab name", cfg.StartupTab)
+			return globalErr("startup_tab", "startup_tab %q does not match any tab name", cfg.StartupTab)
 		}
 	}
 
