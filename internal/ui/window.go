@@ -90,6 +90,7 @@ func (w *appWindow) buildTabs(cfg *config.Config) {
 		t.widget = vteWidget
 
 		vte.SetFont(vteTerm, w.fontFamily, w.fontSize)
+		vte.SetScrollbackLines(vteTerm, cfg.Tabs[i].ScrollbackLines)
 		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, t.onSpawnDone)
 
 		w.notebook.AppendPage(vteWidget, t.labelWidget(i))

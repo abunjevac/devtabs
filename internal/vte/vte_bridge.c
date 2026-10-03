@@ -69,3 +69,8 @@ void vteSetFont(VteTerminal *terminal, const char *desc_str) {
     vte_terminal_set_font(terminal, desc);
     pango_font_description_free(desc);
 }
+
+// Set the number of scrollback lines; -1 means unlimited.
+void vteSetScrollbackLines(VteTerminal *terminal, long lines) {
+    vte_terminal_set_scrollback_lines(terminal, (glong)lines);
+}

@@ -15,21 +15,23 @@ import (
 
 // TabConfig holds the configuration for a single tab.
 type TabConfig struct {
-	Name         string   `yaml:"name"`
-	Command      string   `yaml:"command"`
-	AltCommand   string   `yaml:"alt_command"`
-	WorkingDir   string   `yaml:"working_dir"`
-	RunOnStartup Bool     `yaml:"run_on_startup"`
-	StartupDelay Duration `yaml:"startup_delay"`
-	Shell        string   `yaml:"shell"`
-	ShellArgs    []string `yaml:"shell_args"`
-	Profiles     []string `yaml:"profiles"`
+	Name            string   `yaml:"name"`
+	Command         string   `yaml:"command"`
+	AltCommand      string   `yaml:"alt_command"`
+	WorkingDir      string   `yaml:"working_dir"`
+	RunOnStartup    Bool     `yaml:"run_on_startup"`
+	StartupDelay    Duration `yaml:"startup_delay"`
+	Shell           string   `yaml:"shell"`
+	ShellArgs       []string `yaml:"shell_args"`
+	Profiles        []string `yaml:"profiles"`
+	ScrollbackLines int      `yaml:"scrollback_lines"`
 }
 
 // Config is the top-level configuration.
 type Config struct {
 	StartupTab        string      `yaml:"startup_tab"`
 	WrapTabNavigation bool        `yaml:"wrap_tab_navigation"`
+	ScrollbackLines   int         `yaml:"scrollback_lines"`
 	Font              string      `yaml:"font"`
 	FontSize          float64     `yaml:"font_size"`
 	WindowWidth       int         `yaml:"window_width"`
@@ -92,11 +94,13 @@ func applyDefaults(cfg *Config, root string) {
 	cfg.WindowHeight = cmp.Or(cfg.WindowHeight, 800)
 	cfg.Editor = cmp.Or(cfg.Editor, "zed")
 	cfg.Title = cmp.Or(cfg.Title, "devtabs "+version.Version)
+	cfg.ScrollbackLines = cmp.Or(cfg.ScrollbackLines, 2000)
 
 	for i := range cfg.Tabs {
 		tab := &cfg.Tabs[i]
 
 		tab.Shell = cmp.Or(tab.Shell, "/bin/zsh")
+		tab.ScrollbackLines = cmp.Or(tab.ScrollbackLines, cfg.ScrollbackLines)
 
 		if len(tab.ShellArgs) == 0 {
 			tab.ShellArgs = []string{"-l"}
@@ -115,6 +119,10 @@ func validate(cfg *Config) error {
 		return errors.New("config must define at least one tab")
 	}
 
+	if cfg.ScrollbackLines < -1 {
+		return fmt.Errorf("scrollback_lines %d: must be -1 (unlimited) or greater", cfg.ScrollbackLines)
+	}
+
 	names := make(map[string]struct{}, len(cfg.Tabs))
 
 	for i, tab := range cfg.Tabs {
@@ -124,6 +132,10 @@ func validate(cfg *Config) error {
 
 		if tab.Command == "" {
 			return fmt.Errorf("tab %q: command is required", tab.Name)
+		}
+
+		if tab.ScrollbackLines < -1 {
+			return fmt.Errorf("tab %q: scrollback_lines %d: must be -1 (unlimited) or greater", tab.Name, tab.ScrollbackLines)
 		}
 
 		if _, dup := names[tab.Name]; dup {

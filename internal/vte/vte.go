@@ -156,6 +156,11 @@ func SetFont(t *Terminal, family string, size float64) {
 	C.vteSetFont(t.ptr, cs)
 }
 
+// SetScrollbackLines sets how many lines the terminal keeps in scrollback; -1 means unlimited.
+func SetScrollbackLines(t *Terminal, lines int) {
+	C.vteSetScrollbackLines(t.ptr, C.long(lines))
+}
+
 // FeedChild writes data to the terminal PTY.
 func FeedChild(t *Terminal, data string) {
 	if len(data) == 0 {

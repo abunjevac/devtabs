@@ -10,3 +10,4 @@ void vteSpawnAsync(VteTerminal *terminal, const char *workingDir, char **argv, i
 void vteConnectChildExited(VteTerminal *terminal, int tabID);
 void vteFeedChild(VteTerminal *terminal, const char *data, int len);
 void vteSetFont(VteTerminal *terminal, const char *desc_str);
+void vteSetScrollbackLines(VteTerminal *terminal, long lines);

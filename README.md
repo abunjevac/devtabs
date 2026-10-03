@@ -124,6 +124,7 @@ Create a `devtabs.yaml` file. Only `tabs` is required; everything else is option
 
 ```yaml
 wrap_tab_navigation: true  # optional; cycle from the first/last tab (default: false)
+scrollback_lines: 10000    # lines kept per tab; -1 = unlimited (default: 2000)
 startup_tab: server        # focus this tab on launch (must match a tab name)
 font: "Monospace"          # terminal font family (default: Monospace)
 font_size: 13              # points (default: 12)
@@ -143,6 +144,7 @@ tabs:
     shell: /bin/zsh
     shell_args: [ "-l" ]
     profiles: [ work ]              # only shown when --profile work (or no --profile)
+    scrollback_lines: -1            # optional; overrides the top-level value for this tab
 
   - name: worker
     command: npm run worker
@@ -175,10 +177,13 @@ tabs:
 | `shell`          | no       | `/bin/zsh`            | Shell binary                                                                  |
 | `shell_args`     | no       | `["-l"]`              | Arguments passed to the shell                                                 |
 | `profiles`       | no       | _(always shown)_      | List of profile names; tab is shown only when `--profile` matches one of them |
+| `scrollback_lines` | no     | top-level value       | Lines kept in scrollback for this tab; `-1` means unlimited                   |
 
 `run_on_startup` accepts `true`/`false`, `yes`/`no`, `on`/`off`, or `1`/`0`.
 
 `wrap_tab_navigation` defaults to `false`. Set it to `true` to cycle from the first tab to the last, and from the last tab to the first, with `Alt+Left` and `Alt+Right`.
+
+`scrollback_lines` defaults to `2000`. Set it to `-1` for unlimited scrollback. Each tab can override it with its own `scrollback_lines`.
 
 ---
 
