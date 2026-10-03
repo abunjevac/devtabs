@@ -65,12 +65,22 @@ func (t *tab) labelWidget(idx int) gtk.Widgetter {
 
 	t.dot = dot
 
-	name := gtk.NewLabel("")
+	hint := ""
 
 	if idx >= 0 && idx < 9 {
+		hint = fmt.Sprintf("alt+%d", idx+1)
+	}
+
+	if t.hasAltCommand() {
+		hint += "↑"
+	}
+
+	name := gtk.NewLabel("")
+
+	if hint != "" {
 		name.SetMarkup(fmt.Sprintf(
-			"%s <span size='small' alpha='50%%'>alt+%d</span>",
-			html.EscapeString(t.cfg.Name), idx+1,
+			"%s <span size='small' alpha='50%%'>%s</span>",
+			html.EscapeString(t.cfg.Name), hint,
 		))
 	} else {
 		name.SetText(t.cfg.Name)
@@ -137,9 +147,23 @@ func (t *tab) getState() tabState {
 // runCommand writes the configured command to the terminal PTY.
 // Must be called from the GTK main thread.
 func (t *tab) runCommand() {
+	t.feedCommand(t.cfg.Command)
+}
+
+// runAltCommand writes the configured alternate command to the terminal PTY.
+// Must be called from the GTK main thread.
+func (t *tab) runAltCommand() {
+	t.feedCommand(t.cfg.AltCommand)
+}
+
+func (t *tab) hasAltCommand() bool {
+	return t.cfg.AltCommand != ""
+}
+
+func (t *tab) feedCommand(command string) {
 	t.setState(stateRunning)
 
-	vte.FeedChild(t.terminal, t.cfg.Command+"\n")
+	vte.FeedChild(t.terminal, command+"\n")
 }
 
 // scheduleStartup initiates run_on_startup behaviour after spawn completes.

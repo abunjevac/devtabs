@@ -15,6 +15,7 @@ tabs:
 
   - name: task check
     command: task check
+    alt_command: task --version
     run_on_startup: false
 
   - name: go version

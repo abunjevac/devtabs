@@ -48,6 +48,20 @@ func TestProfiles(t *testing.T) {
 	})
 }
 
+func TestAltCommand(t *testing.T) {
+	t.Run("alt_command field parses", func(t *testing.T) {
+		cfg, err := config.LoadFromString("tabs:\n  - name: a\n    command: x\n    alt_command: y\n")
+		require.NoError(t, err)
+		assert.Equal(t, "y", cfg.Tabs[0].AltCommand)
+	})
+
+	t.Run("alt_command is optional", func(t *testing.T) {
+		cfg, err := config.LoadFromString("tabs:\n  - name: a\n    command: x\n")
+		require.NoError(t, err)
+		assert.Empty(t, cfg.Tabs[0].AltCommand)
+	})
+}
+
 func TestApplicationDefaults(t *testing.T) {
 	cfg, err := config.LoadFromString("tabs:\n  - name: a\n    command: x\n")
 	require.NoError(t, err)

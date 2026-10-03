@@ -17,6 +17,7 @@ import (
 type TabConfig struct {
 	Name         string   `yaml:"name"`
 	Command      string   `yaml:"command"`
+	AltCommand   string   `yaml:"alt_command"`
 	WorkingDir   string   `yaml:"working_dir"`
 	RunOnStartup Bool     `yaml:"run_on_startup"`
 	StartupDelay Duration `yaml:"startup_delay"`

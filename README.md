@@ -18,12 +18,13 @@ Built with GTK4 and VTE.
 - **Named tabs** — each tab has a name shown as a label
 - **State indicator dot** — grey (idle), green (running), yellow (startup delay), red (dead)
 - **Run / Stop** — execute or interrupt the configured command per tab, or all tabs at once
+- **Alternate command** — optional second command per tab, run with `Alt+T`; tabs that have one show `↑` after their shortcut hint
 - **Auto-run on startup** — optional `run_on_startup` with configurable `startup_delay`
 - **Font scaling** — `Ctrl++` / `Ctrl+-` to adjust terminal font size at runtime
 - **Startup tab** — configure which tab receives focus on launch
 - **Profile filtering** — tag tabs with profiles and pass `--profile work,dev` to show only matching tabs
 - **Directory actions** — open a terminal, file manager, or editor in the config file's directory or the current tab's directory
-- **Keyboard shortcuts** — `Alt+1`–`9` to switch tabs; `Alt+Left`/`Alt+Right` to navigate; `Alt+R/S/A/X` for run/stop; `Ctrl+Q` to quit
+- **Keyboard shortcuts** — `Alt+1`–`9` to switch tabs; `Alt+Left`/`Alt+Right` to navigate; `Alt+R/T/S/A/X` for run/run alt/stop; `Ctrl+Q` to quit
 - **Version in titlebar** — shows the release version at a glance
 
 ---
@@ -135,6 +136,7 @@ editor: zed                # editor executable (default: zed)
 tabs:
   - name: server
     command: npm run dev
+    alt_command: npm run build      # optional; run with Alt+T
     working_dir: ~/projects/myapp   # ~ is expanded to your home directory
     run_on_startup: true
     startup_delay: 0s
@@ -166,6 +168,7 @@ tabs:
 |------------------|----------|-----------------------|-------------------------------------------------------------------------------|
 | `name`           | yes      | —                     | Unique label shown on the tab                                                 |
 | `command`        | yes      | —                     | Command written to the shell when Run is triggered                            |
+| `alt_command`    | no       | —                     | Alternate command written to the shell when Run Alt (`Alt+T`) is triggered    |
 | `working_dir`    | no       | config file directory | Shell's working directory                                                     |
 | `run_on_startup` | no       | `false`               | Run the command automatically when the app starts                             |
 | `startup_delay`  | no       | `0s`                  | Delay before auto-running (Go duration: `500ms`, `2s`, `1m`)                  |
@@ -188,6 +191,7 @@ tabs:
 | `Alt+Left`        | Select the previous tab    |
 | `Alt+Right`       | Select the next tab        |
 | `Alt+R`           | Run command in current tab |
+| `Alt+T`           | Run alternate command in current tab |
 | `Alt+S`           | Stop (Ctrl+C) current tab  |
 | `Alt+A`           | Run all idle tabs          |
 | `Alt+X`           | Stop all running tabs      |

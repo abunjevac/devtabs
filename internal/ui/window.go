@@ -19,7 +19,7 @@ import (
 const appIconName = "io.github.abunjevac.devtabs"
 
 type toolbarButtons struct {
-	run, stop *gtk.Button
+	run, runAlt, stop *gtk.Button
 }
 
 // appWindow holds all GTK4 objects and mutable UI state for the main window.
@@ -103,20 +103,6 @@ func (w *appWindow) buildTabs(cfg *config.Config) {
 }
 
 func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
-	run := shortcutButton("media-playback-start", "Run", "alt+r")
-	stop := shortcutButton("media-playback-stop", "Stop", "alt+s")
-	runAll := shortcutButton("system-run", "Run All", "alt+a")
-	stopAll := shortcutButton("process-stop", "Stop All", "alt+x")
-
-	for _, b := range []*gtk.Button{run, stop, runAll, stopAll} {
-		b.SetFocusOnClick(false)
-	}
-
-	run.ConnectClicked(w.runCurrent)
-	stop.ConnectClicked(w.stopCurrent)
-	runAll.ConnectClicked(w.runAll)
-	stopAll.ConnectClicked(w.stopAll)
-
 	minus := shortcutButton("zoom-out", "Font −", "ctrl+-")
 	plus := shortcutButton("zoom-in", "Font +", "ctrl++")
 
@@ -127,8 +113,6 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	minus.ConnectClicked(w.decreaseFont)
 
 	plus.ConnectClicked(w.increaseFont)
-
-	w.buttons = toolbarButtons{run: run, stop: stop}
 
 	spacer := gtk.NewBox(gtk.OrientationHorizontal, 0)
 	spacer.SetHExpand(true)
@@ -141,11 +125,7 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	box.SetMarginEnd(6)
 	box.SetMarginTop(4)
 	box.SetMarginBottom(4)
-	box.Append(run)
-	box.Append(stop)
-	box.Append(gtk.NewSeparator(gtk.OrientationVertical))
-	box.Append(runAll)
-	box.Append(stopAll)
+	box.Append(w.buildRunButtons())
 	box.Append(gtk.NewSeparator(gtk.OrientationVertical))
 	box.Append(minus)
 	box.Append(plus)
@@ -153,6 +133,37 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 	box.Append(w.buildDirButtons(ctx))
 	box.Append(spacer)
 	box.Append(menuBtn)
+
+	return box
+}
+
+func (w *appWindow) buildRunButtons() *gtk.Box {
+	run := shortcutButton("media-playback-start", "Run", "alt+r")
+	runAlt := shortcutButton("media-skip-forward", "Run Alt", "alt+t")
+	stop := shortcutButton("media-playback-stop", "Stop", "alt+s")
+	runAll := shortcutButton("system-run", "Run All", "alt+a")
+	stopAll := shortcutButton("process-stop", "Stop All", "alt+x")
+
+	for _, b := range []*gtk.Button{run, runAlt, stop, runAll, stopAll} {
+		b.SetFocusOnClick(false)
+	}
+
+	run.ConnectClicked(w.runCurrent)
+	runAlt.ConnectClicked(w.runAltCurrent)
+	stop.ConnectClicked(w.stopCurrent)
+	runAll.ConnectClicked(w.runAll)
+	stopAll.ConnectClicked(w.stopAll)
+
+	w.buttons = toolbarButtons{run: run, runAlt: runAlt, stop: stop}
+
+	box := gtk.NewBox(gtk.OrientationHorizontal, 4)
+
+	box.Append(run)
+	box.Append(runAlt)
+	box.Append(stop)
+	box.Append(gtk.NewSeparator(gtk.OrientationVertical))
+	box.Append(runAll)
+	box.Append(stopAll)
 
 	return box
 }
@@ -268,6 +279,9 @@ func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.Mod
 	case altPressed && key == uint('r'):
 		w.runCurrent()
 
+	case altPressed && key == uint('t'):
+		w.runAltCurrent()
+
 	case altPressed && key == uint('a'):
 		w.runAll()
 
@@ -314,6 +328,14 @@ func (w *appWindow) runCurrent() {
 
 	if idx >= 0 && idx < len(w.tabs) && w.tabs[idx].getState() == stateIdle {
 		w.tabs[idx].runCommand()
+	}
+}
+
+func (w *appWindow) runAltCurrent() {
+	idx := w.notebook.CurrentPage()
+
+	if idx >= 0 && idx < len(w.tabs) && w.tabs[idx].hasAltCommand() && w.tabs[idx].getState() == stateIdle {
+		w.tabs[idx].runAltCommand()
 	}
 }
 
@@ -407,14 +429,17 @@ func (w *appWindow) currentTabDir() (string, bool) {
 func (w *appWindow) updateButtonSensitivity(idx int) {
 	if idx < 0 || idx >= len(w.tabs) {
 		w.buttons.run.SetSensitive(false)
+		w.buttons.runAlt.SetSensitive(false)
 		w.buttons.stop.SetSensitive(false)
 
 		return
 	}
 
-	s := w.tabs[idx].getState()
+	t := w.tabs[idx]
+	s := t.getState()
 
 	w.buttons.run.SetSensitive(s == stateIdle)
+	w.buttons.runAlt.SetSensitive(s == stateIdle && t.hasAltCommand())
 	w.buttons.stop.SetSensitive(s == stateRunning)
 }
 
