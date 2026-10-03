@@ -6,6 +6,7 @@ linters:
   enable:
     - gomodguard_v2
   disable:
+    - exhaustruct_v5
     - gomodguard
     - err113
     - tagliatelle
