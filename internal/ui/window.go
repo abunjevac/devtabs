@@ -93,7 +93,12 @@ func (w *appWindow) buildTabs(cfg *config.Config) {
 		vte.SetScrollbackLines(vteTerm, cfg.Tabs[i].ScrollbackLines)
 		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, t.onSpawnDone)
 
-		w.notebook.AppendPage(vteWidget, t.labelWidget(i))
+		scroller := gtk.NewScrolledWindow()
+
+		scroller.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
+		scroller.SetChild(vteWidget)
+
+		w.notebook.AppendPage(scroller, t.labelWidget(i))
 
 		vte.ConnectChildExited(vteTerm, func(_ int) {
 			t.die()
