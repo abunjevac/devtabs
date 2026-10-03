@@ -1,22 +1,20 @@
 startup_tab: go version
-font: "Google Sans Code"
-font_size: 14
 wrap_tab_navigation: true
+font: Google Sans Code
+font_size: 14
 window_width: 1400
 window_height: 1000
 title: DevTabs
-editor: zed .
 file_manager: dolphin
+editor: zed .
 
 tabs:
-  - name: apt update
-    command: sudo apt update
-    run_on_startup: false
-
   - name: task check
     command: task check
     alt_command: task --version
-    run_on_startup: false
+
+  - name: apt update
+    command: sudo apt update
 
   - name: go version
     command: go version
