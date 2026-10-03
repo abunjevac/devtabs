@@ -23,13 +23,13 @@ static void vteSpawnBridge(VteTerminal *terminal, GPid pid, GError *error, gpoin
 // Spawn a shell in the terminal asynchronously.
 // callbackID is passed back to goVteSpawnDone.
 void vteSpawnAsync(VteTerminal *terminal, const char *workingDir,
-                   char **argv, int callbackID) {
+                   char **argv, char **envv, int callbackID) {
     vte_terminal_spawn_async(
         terminal,
         VTE_PTY_DEFAULT,
         workingDir,
         argv,
-        NULL,              // envv — inherit
+        envv,              // added to the inherited environment; may be NULL
         G_SPAWN_SEARCH_PATH,
         NULL, NULL, NULL,  // child_setup / data / destroy
         -1,                // timeout: -1 = default

@@ -48,21 +48,25 @@ func main() {
 }
 
 func run(ctx context.Context, cmd *cli.Command) error {
-	cfgPath := cmd.String("config")
+	cfgPath, err := filepath.Abs(cmd.String("config"))
+	if err != nil {
+		return fmt.Errorf("resolve-config-path: %w", err)
+	}
+
 	root := cmd.String("root")
 
 	if root == "" {
-		abs, err := filepath.Abs(cfgPath)
-		if err != nil {
-			return fmt.Errorf("resolve-config-path: %w", err)
-		}
-
-		root = filepath.Dir(abs)
+		root = filepath.Dir(cfgPath)
 	}
 
 	cfg, err := config.Load(cfgPath, root)
 	if err != nil {
-		return fmt.Errorf("config error: %w", err)
+		// let the user fix or create the config instead of exiting
+		_, _ = fmt.Fprintf(os.Stderr, "devtabs: config error: %v\n", err)
+
+		ui.RunEditor(ctx, cfgPath, fmt.Sprintf("devtabs could not start: %v", err))
+
+		return nil
 	}
 
 	profiles := parseProfiles(cmd.String("profile"))
@@ -72,7 +76,7 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("profile filter: %w", err)
 	}
 
-	ui.Run(ctx, cfg, root)
+	ui.Run(ctx, cfg, root, cfgPath)
 
 	return nil
 }

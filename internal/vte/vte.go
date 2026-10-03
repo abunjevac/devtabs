@@ -122,12 +122,22 @@ func NewTerminal() (*Terminal, gtk.Widgetter) {
 }
 
 // SpawnAsync starts a shell in the terminal asynchronously.
+// extraEnv entries (KEY=value) are added to the inherited environment.
 // cb is called on the GTK main thread with the shell PID and PTY fd.
-func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb SpawnCallback) {
+func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs, extraEnv []string, cb SpawnCallback) {
 	id := registerSpawnCallback(cb)
 
 	argv := buildArgv(shell, shellArgs)
 	defer freeArgv(argv)
+
+	var envv **C.char
+
+	if len(extraEnv) > 0 {
+		env := buildEnvv(extraEnv)
+		defer freeArgv(env)
+
+		envv = &env[0]
+	}
 
 	var cwd *C.char
 
@@ -136,7 +146,7 @@ func SpawnAsync(t *Terminal, workingDir, shell string, shellArgs []string, cb Sp
 		defer C.free(unsafe.Pointer(cwd)) //nolint:nlreturn // probably false positive
 	}
 
-	C.vteSpawnAsync(t.ptr, cwd, &argv[0], C.int(id))
+	C.vteSpawnAsync(t.ptr, cwd, &argv[0], envv, C.int(id))
 }
 
 // ConnectChildExited wires the child-exited VTE signal.
@@ -185,6 +195,17 @@ func buildArgv(shell string, args []string) []*C.char {
 	argv = append(argv, nil)
 
 	return argv
+}
+
+// buildEnvv returns a NULL-terminated array of KEY=value strings.
+func buildEnvv(env []string) []*C.char {
+	envv := make([]*C.char, 0, len(env)+1)
+
+	for _, e := range env {
+		envv = append(envv, C.CString(e))
+	}
+
+	return append(envv, nil)
 }
 
 func freeArgv(argv []*C.char) {

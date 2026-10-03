@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/abunjevac/devtabs/assets"
 	"github.com/abunjevac/devtabs/internal/config"
+	"github.com/abunjevac/devtabs/internal/editor"
 	"github.com/abunjevac/devtabs/internal/version"
 	"github.com/abunjevac/devtabs/internal/vte"
 )
@@ -24,22 +24,29 @@ type toolbarButtons struct {
 
 // appWindow holds all GTK4 objects and mutable UI state for the main window.
 type appWindow struct {
+	app      *gtk.Application
 	win      *gtk.ApplicationWindow
 	notebook *gtk.Notebook
 	tabs     []*tab
 	buttons  toolbarButtons
 
-	fontFamily        string
-	fontSize          float64
-	configDir         string
+	fontFamily string
+	fontSize   float64
+	configDir  string
+	configPath string
+	// added to the environment of every process devtabs launches
+	childEnv          []string
 	terminal          string
 	fileManager       string
 	editor            string
 	wrapTabNavigation bool
 }
 
-func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, configDir string) *gtk.ApplicationWindow {
+func newWindow(ctx context.Context, app *gtk.Application, cfg *config.Config, configDir, configPath string, childEnv []string) *gtk.ApplicationWindow {
 	w := &appWindow{
+		childEnv:          childEnv,
+		app:               app,
+		configPath:        configPath,
 		fontFamily:        cfg.Font,
 		fontSize:          cfg.FontSize,
 		configDir:         configDir,
@@ -91,7 +98,7 @@ func (w *appWindow) buildTabs(cfg *config.Config) {
 
 		vte.SetFont(vteTerm, w.fontFamily, w.fontSize)
 		vte.SetScrollbackLines(vteTerm, cfg.Tabs[i].ScrollbackLines)
-		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, t.onSpawnDone)
+		vte.SpawnAsync(vteTerm, cfg.Tabs[i].WorkingDir, cfg.Tabs[i].Shell, cfg.Tabs[i].ShellArgs, w.childEnv, t.onSpawnDone)
 
 		scroller := gtk.NewScrolledWindow()
 
@@ -393,7 +400,7 @@ func (w *appWindow) applyFont() {
 
 func (w *appWindow) openCurrentTerminal(ctx context.Context) {
 	if dir, ok := w.currentTabDir(); ok {
-		if err := openTerminal(ctx, dir, w.terminal); err != nil {
+		if err := openTerminal(ctx, dir, w.terminal, w.childEnv); err != nil {
 			w.showShellError(err)
 		}
 	}
@@ -401,7 +408,7 @@ func (w *appWindow) openCurrentTerminal(ctx context.Context) {
 
 func (w *appWindow) openCurrentFileManager(ctx context.Context) {
 	if dir, ok := w.currentTabDir(); ok {
-		if err := openFileManager(ctx, dir, w.fileManager); err != nil {
+		if err := openFileManager(ctx, dir, w.fileManager, w.childEnv); err != nil {
 			w.showShellError(err)
 		}
 	}
@@ -409,7 +416,7 @@ func (w *appWindow) openCurrentFileManager(ctx context.Context) {
 
 func (w *appWindow) openCurrentEditor(ctx context.Context) {
 	if dir, ok := w.currentTabDir(); ok {
-		if err := openEditor(ctx, dir, w.editor); err != nil {
+		if err := openEditor(ctx, dir, w.editor, w.childEnv); err != nil {
 			w.showShellError(err)
 		}
 	}
@@ -449,8 +456,17 @@ func (w *appWindow) updateButtonSensitivity(idx int) {
 	w.buttons.stop.SetSensitive(s == stateRunning)
 }
 
+// restart closes all tabs and starts a fresh copy of the process.
+func (w *appWindow) restart(ctx context.Context) {
+	for _, t := range w.tabs {
+		t.close()
+	}
+
+	restartProcess(ctx, w.childEnv)
+}
+
 // restartProcess starts a fresh copy of the binary with the same arguments and exits.
-func restartProcess(ctx context.Context) {
+func restartProcess(ctx context.Context, childEnv []string) {
 	exe, err := os.Executable()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "devtabs: restart: %v\n", err)
@@ -458,8 +474,7 @@ func restartProcess(ctx context.Context) {
 		return
 	}
 
-	//nolint:gosec // restarting the same binary with the original arguments is intentional
-	cmd := exec.CommandContext(ctx, exe, os.Args[1:]...)
+	cmd := command(ctx, childEnv, exe, os.Args[1:]...)
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -479,17 +494,7 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 
 	openDirItems := w.buildOpenDirMenuItems(ctx, popover)
 
-	restartBtn := menuItem("view-refresh", "Restart")
-
-	restartBtn.ConnectClicked(func() {
-		popover.Popdown()
-
-		for _, t := range w.tabs {
-			t.close()
-		}
-
-		restartProcess(ctx)
-	})
+	configItems := w.buildConfigMenuItems(ctx, popover)
 
 	aboutBtn := menuItem("help-about", "About")
 
@@ -519,7 +524,11 @@ func (w *appWindow) buildMenuButton(ctx context.Context) *gtk.MenuButton {
 	}
 
 	popoverBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
-	popoverBox.Append(restartBtn)
+
+	for _, item := range configItems {
+		popoverBox.Append(item)
+	}
+
 	popoverBox.Append(aboutBtn)
 	popoverBox.Append(quitBtn)
 
@@ -557,13 +566,36 @@ func (w *appWindow) showAbout() {
 	dialog.Present()
 }
 
+func (w *appWindow) buildConfigMenuItems(ctx context.Context, popover *gtk.Popover) []*gtk.Button {
+	editConfigBtn := menuItem("document-properties", "Edit Config")
+
+	editConfigBtn.ConnectClicked(func() {
+		popover.Popdown()
+
+		editor.Open(ctx, w.app, &w.win.Window, editor.Options{
+			Path:    w.configPath,
+			Restart: func() { w.restart(ctx) },
+		})
+	})
+
+	restartBtn := menuItem("view-refresh", "Restart")
+
+	restartBtn.ConnectClicked(func() {
+		popover.Popdown()
+
+		w.restart(ctx)
+	})
+
+	return []*gtk.Button{editConfigBtn, restartBtn}
+}
+
 func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popover) []*gtk.Button {
 	openTerm := menuItem("utilities-terminal", "Open Terminal Here")
 
 	openTerm.ConnectClicked(func() {
 		popover.Popdown()
 
-		if err := openTerminal(ctx, w.configDir, w.terminal); err != nil {
+		if err := openTerminal(ctx, w.configDir, w.terminal, w.childEnv); err != nil {
 			w.showShellError(err)
 		}
 	})
@@ -573,7 +605,7 @@ func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popo
 	openFiles.ConnectClicked(func() {
 		popover.Popdown()
 
-		if err := openFileManager(ctx, w.configDir, w.fileManager); err != nil {
+		if err := openFileManager(ctx, w.configDir, w.fileManager, w.childEnv); err != nil {
 			w.showShellError(err)
 		}
 	})
@@ -583,7 +615,7 @@ func (w *appWindow) buildOpenDirMenuItems(ctx context.Context, popover *gtk.Popo
 	openEditorBtn.ConnectClicked(func() {
 		popover.Popdown()
 
-		if err := openEditor(ctx, w.configDir, w.editor); err != nil {
+		if err := openEditor(ctx, w.configDir, w.editor, w.childEnv); err != nil {
 			w.showShellError(err)
 		}
 	})
