@@ -191,9 +191,9 @@ tabs:
 | `Alt+S`           | Stop (Ctrl+C) current tab  |
 | `Alt+A`           | Run all idle tabs          |
 | `Alt+X`           | Stop all running tabs      |
-| `Alt+T`           | Open terminal in current tab directory |
-| `Alt+D`           | Open file manager in current tab directory |
-| `Alt+E`           | Open editor in current tab directory |
+| `Ctrl+Shift+T`    | Open terminal in current tab directory |
+| `Ctrl+Shift+F`    | Open file manager in current tab directory |
+| `Ctrl+Shift+I`    | Open editor in current tab directory |
 | `Ctrl++`          | Increase font size         |
 | `Ctrl+-`          | Decrease font size         |
 | `Ctrl+Q`          | Quit                       |

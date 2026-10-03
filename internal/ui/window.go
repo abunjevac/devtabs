@@ -158,9 +158,9 @@ func (w *appWindow) buildToolbar(ctx context.Context) *gtk.Box {
 }
 
 func (w *appWindow) buildDirButtons(ctx context.Context) *gtk.Box {
-	openTerm := shortcutButton("utilities-terminal", "Terminal", "alt+t")
-	openFiles := shortcutButton("system-file-manager", "Files", "alt+f")
-	openEdit := shortcutButton("accessories-text-editor", "Editor", "alt+e")
+	openTerm := shortcutButton("utilities-terminal", "Terminal", "ctrl+shift+t")
+	openFiles := shortcutButton("system-file-manager", "Files", "ctrl+shift+f")
+	openEdit := shortcutButton("accessories-text-editor", "Editor", "ctrl+shift+i")
 
 	for _, b := range []*gtk.Button{openTerm, openFiles, openEdit} {
 		b.SetFocusOnClick(false)
@@ -244,6 +244,7 @@ func (w *appWindow) installKeyController(ctx context.Context) {
 func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.ModifierType) bool { //nolint:cyclop,gocyclo // keyboard action dispatch is intentionally a flat shortcut map
 	altPressed := state&gdk.AltMask != 0
 	ctrlPressed := state&gdk.ControlMask != 0
+	ctrlShiftPressed := ctrlPressed && state&gdk.ShiftMask != 0
 
 	switch {
 	case altPressed && key >= uint('1') && key <= uint('9'):
@@ -273,13 +274,13 @@ func (w *appWindow) onKeyPressed(ctx context.Context, key, _ uint, state gdk.Mod
 	case altPressed && key == uint('x'):
 		w.stopAll()
 
-	case altPressed && key == uint('t'):
+	case ctrlShiftPressed && gdk.KeyvalToLower(key) == uint('t'):
 		w.openCurrentTerminal(ctx)
 
-	case altPressed && key == uint('f'):
+	case ctrlShiftPressed && gdk.KeyvalToLower(key) == uint('f'):
 		w.openCurrentFileManager(ctx)
 
-	case altPressed && key == uint('e'):
+	case ctrlShiftPressed && gdk.KeyvalToLower(key) == uint('i'):
 		w.openCurrentEditor(ctx)
 
 	case ctrlPressed && (key == gdk.KEY_plus || key == gdk.KEY_equal || key == gdk.KEY_KP_Add):
