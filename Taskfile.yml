@@ -43,9 +43,12 @@ tasks:
       - task: scan
 
   install:
-    desc: Install devtabs to $GOPATH/bin
+    desc: Build devtabs, pack it with upx and install to ~/.local/bin
     cmds:
-      - go install .
+      - task: build
+      - task: pack
+      - mkdir -p ~/.local/bin
+      - mv devtabs ~/.local/bin/devtabs
 
   install-desktop:
     desc: Install desktop launcher and app icon for the current user
